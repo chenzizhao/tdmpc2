@@ -1,7 +1,7 @@
 from copy import deepcopy
 import warnings
 
-import gymnasium as gym
+# import gymnasium as gym
 
 from envs.wrappers.multitask import MultitaskWrapper
 from envs.wrappers.tensor import TensorWrapper
@@ -30,6 +30,10 @@ try:
 except:
 	make_mujoco_env = missing_dependencies
 
+try:
+	from envs.knot import make_env as make_knot_env
+except:
+	make_knot_env = missing_dependencies
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
@@ -59,13 +63,13 @@ def make_env(cfg):
 	"""
 	Make an environment for TD-MPC2 experiments.
 	"""
-	gym.logger.set_level(40)
+	# gym.logger.set_level(40)
 	if cfg.multitask:
 		env = make_multitask_env(cfg)
 
 	else:
 		env = None
-		for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env, make_mujoco_env]:
+		for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env, make_mujoco_env, make_knot_env]:
 			try:
 				env = fn(cfg)
 			except ValueError:
@@ -78,6 +82,6 @@ def make_env(cfg):
 	except: # Box
 		cfg.obs_shape = {cfg.get('obs', 'state'): env.observation_space.shape}
 	cfg.action_dim = env.action_space.shape[0]
-	cfg.episode_length = env.max_episode_steps
+	cfg.episode_length = getattr(env, 'max_episode_steps', None) or env.get_wrapper_attr('max_episode_steps')
 	cfg.seed_steps = max(1000, 5*cfg.episode_length)
 	return env
