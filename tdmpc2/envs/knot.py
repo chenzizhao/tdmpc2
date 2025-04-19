@@ -27,7 +27,7 @@ class Pixels(gym.Wrapper):
         obs[:, : obs.shape[1] // 2, :],
         obs[:, obs.shape[1] // 2 :, :],
       ],
-      axis=1,
+      axis=-1,
     )
     # 480, 480, 6 --> 6, 480, 480
     obs = np.transpose(obs, (2, 0, 1))
