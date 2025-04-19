@@ -6,6 +6,7 @@ import knotgym  # noqa: F401
 
 import numpy as np
 
+
 # view wrapper
 class Pixels(gym.Wrapper):
   def __init__(self, env, cfg):
@@ -13,14 +14,22 @@ class Pixels(gym.Wrapper):
     self.cfg = cfg
     self.env = env
     obs = self.env.observation_space  # 480, 960, 3
-    height, width, channels = obs.shape
+    height, combined_width, channels = obs.shape
+    width = combined_width // 2
     self.observation_space = gym.spaces.Box(
-      low=0, high=255, shape=(channels, height, width), dtype=np.uint8
+      low=0, high=255, shape=(channels * 2, height, width), dtype=np.uint8
     )
 
   def _proc_obs(self, obs):
-    # transpose to get (3, 480, 960)
-    # TODO: set curr and target render as diff frames?
+    # 480, 960, 3 --> 480, 480, 6
+    obs = np.concatenate(
+      [
+        obs[:, : obs.shape[1] // 2, :],
+        obs[:, obs.shape[1] // 2 :, :],
+      ],
+      axis=1,
+    )
+    # 480, 480, 6 --> 6, 480, 480
     obs = np.transpose(obs, (2, 0, 1))
     return obs
 
@@ -38,6 +47,7 @@ class OldStepWrapper(gym.Wrapper):
     obs, reward, trunc, term, info = self.env.step(action)
     done = trunc or term
     info["terminated"] = term
+    info["success"] = info["is_success"]
     return obs, reward, done, info
 
   def reset(self, **kwargs):
@@ -46,8 +56,8 @@ class OldStepWrapper(gym.Wrapper):
 
 
 def make_env(cfg):
-  logdir = None
   split = "tr"
+  logdir = cfg.work_dir / split / "0001"
   task = cfg.task  # tie_unknot
   assert cfg.obs in ("rgb",)
   env = gym.make(
@@ -56,7 +66,7 @@ def make_env(cfg):
     logdir=logdir,
     split=split,
     height=64,  # TODO: to fix cnn later
-    width=32,
+    width=64,
   )
   env = Pixels(env, cfg)
   env = OldStepWrapper(env)
