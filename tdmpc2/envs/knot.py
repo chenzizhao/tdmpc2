@@ -65,8 +65,8 @@ def make_env(cfg):
     task=task,
     logdir=logdir,
     split=split,
-    height=64,  # TODO: to fix cnn later
-    width=64,
+    height=128,
+    width=128,
   )
   env = Pixels(env, cfg)
   env = OldStepWrapper(env)

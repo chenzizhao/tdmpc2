@@ -134,20 +134,38 @@ def mlp(in_dim, mlp_dims, out_dim, act=None, dropout=0.):
 
 
 def conv(in_shape, num_channels, act=None):
-	"""
-	Basic convolutional encoder for TD-MPC2 with raw image observations.
-	4 layers of convolution with ReLU activations, followed by a linear layer.
-	"""
-	assert in_shape[-1] == 64 # assumes rgb observations to be 64x64
-	layers = [
-		ShiftAug(), PixelPreprocess(),
-		nn.Conv2d(in_shape[0], num_channels, 7, stride=2), nn.ReLU(inplace=False),
-		nn.Conv2d(num_channels, num_channels, 5, stride=2), nn.ReLU(inplace=False),
-		nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=False),
-		nn.Conv2d(num_channels, num_channels, 3, stride=1), nn.Flatten()]
-	if act:
-		layers.append(act)
-	return nn.Sequential(*layers)
+  """
+  Basic convolutional encoder for TD-MPC2 with raw image observations.
+  4 layers of convolution with ReLU activations, followed by a linear layer.
+  """
+  # assert in_shape[-1] == 64 # assumes rgb observations to be 64x64
+	# 
+  num_shrink_layers = {64: 1, 128: 2, 256: 3}
+  assert in_shape[-1] in num_shrink_layers, (
+    f"Input shape {in_shape} not supported."
+  )
+
+  shrink_layers = [
+    [nn.Conv2d(num_channels, num_channels, 5, stride=2), nn.ReLU(inplace=False)]
+    for _ in range(num_shrink_layers[in_shape[-1]])
+  ]
+  shrink_layers = [layer for sublist in shrink_layers for layer in sublist]
+
+  layers = [
+    ShiftAug(),
+    PixelPreprocess(),
+    nn.Conv2d(in_shape[0], num_channels, 7, stride=2),
+    nn.ReLU(inplace=False),]
+  layers += shrink_layers
+  layers += [
+    nn.Conv2d(num_channels, num_channels, 3, stride=2),
+    nn.ReLU(inplace=False),
+    nn.Conv2d(num_channels, num_channels, 3, stride=1),
+    nn.Flatten(),
+  ]
+  if act:
+    layers.append(act)
+  return nn.Sequential(*layers)
 
 
 def enc(cfg, out={}):
