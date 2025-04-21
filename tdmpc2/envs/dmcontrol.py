@@ -88,6 +88,9 @@ class Pixels(gym.Wrapper):
 		_, reward, done, info = self.env.step(action)
 		return self._get_obs(), reward, done, info
 
+	def close(self):
+		self.env.close()
+
 
 def make_env(cfg):
 	"""
