@@ -127,7 +127,7 @@ class WorldModel(nn.Module):
 			z = self.task_emb(z, task)
 		z = torch.cat([z, a], dim=-1)
 		return self._reward(z)
-	
+
 	def termination(self, z, task, unnormalized=False):
 		"""
 		Predicts termination signal.
@@ -150,34 +150,34 @@ class WorldModel(nn.Module):
 			z = self.task_emb(z, task)
 
     # Gaussian policy prior
-    mu, log_std = self._pi(z).chunk(2, dim=-1)
-    log_std = math.log_std(log_std, self.log_std_min, self.log_std_dif)
-    eps = torch.randn_like(mu)
+		mu, log_std = self._pi(z).chunk(2, dim=-1)
+		log_std = math.log_std(log_std, self.log_std_min, self.log_std_dif)
+		eps = torch.randn_like(mu)
 
-    if self.cfg.multitask:  # Mask out unused action dimensions
-      mu = mu * self._action_masks[task]
-      log_std = log_std * self._action_masks[task]
-      eps = eps * self._action_masks[task]
-      action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
-    else:  # No masking
-      action_dims = None
+		if self.cfg.multitask:  # Mask out unused action dimensions
+			mu = mu * self._action_masks[task]
+			log_std = log_std * self._action_masks[task]
+			eps = eps * self._action_masks[task]
+			action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
+		else:  # No masking
+			action_dims = None
 
-    log_pi = math.gaussian_logprob(eps, log_std, size=action_dims)
-    pi = mu + eps * log_std.exp()
-    mu, pi, log_pi = math.squash(mu, pi, log_pi)
+		log_pi = math.gaussian_logprob(eps, log_std, size=action_dims)
+		pi = mu + eps * log_std.exp()
+		mu, pi, log_pi = math.squash(mu, pi, log_pi)
 
-    return mu, pi, log_pi, log_std
+		return mu, pi, log_pi, log_std
 
-  def Q(self, z, a, task, return_type="min", target=False, detach=False):
-    """
-    Predict state-action value.
-    `return_type` can be one of [`min`, `avg`, `all`]:
-            - `min`: return the minimum of two randomly subsampled Q-values.
-            - `avg`: return the average of two randomly subsampled Q-values.
-            - `all`: return all Q-values.
-    `target` specifies whether to use the target Q-networks or not.
-    """
-    assert return_type in {"min", "avg", "all"}
+	def Q(self, z, a, task, return_type="min", target=False, detach=False):
+		"""
+		Predict state-action value.
+		`return_type` can be one of [`min`, `avg`, `all`]:
+						- `min`: return the minimum of two randomly subsampled Q-values.
+						- `avg`: return the average of two randomly subsampled Q-values.
+						- `all`: return all Q-values.
+		`target` specifies whether to use the target Q-networks or not.
+		"""
+		assert return_type in {"min", "avg", "all"}
 
 		if self.cfg.multitask:
 			z = self.task_emb(z, task)
