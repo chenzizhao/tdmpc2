@@ -2,6 +2,7 @@ import gymnasium
 import torch
 from gym import spaces
 from functools import partial as bind
+import numpy as np
 
 
 class Vectorized:
@@ -15,7 +16,13 @@ class Vectorized:
 
     print(f"Creating {cfg.num_envs} environments...")
     self.env = gymnasium.vector.AsyncVectorEnv(
-      [bind(env_fn, cfg, rank=i + 1, old_api=False) for i in range(cfg.num_envs)]
+      [
+        bind(
+          env_fn, cfg, rank=i + 1, old_api=False, duration=cfg.episode_length
+        )
+        for i in range(cfg.num_envs)
+      ],
+      autoreset_mode="SameStep",  # https://farama.org/Vector-Autoreset-Mode
     )
 
     obs_space = self.env.single_observation_space
@@ -33,7 +40,7 @@ class Vectorized:
       dtype=act_space.dtype,
       shape=act_space.shape,
     )
-    self.max_episode_steps = 100  # TODO: get from env or cfg
+    self.max_episode_steps = cfg.episode_length  # TODO: get from env or cfg
     self.num_envs = self.env.num_envs
 
   def rand_act(self):
@@ -48,8 +55,8 @@ class Vectorized:
     # old api
     obs, reward, term, trunc, info = self.env.step(action)
     done = term | trunc
-    info["terminated"] = term.astype(float)
-    info["success"] = info["is_success"].astype(float)
+    info["terminated"] = term.astype(float)  # numpy array
+    info["success"] = info["is_success"].astype(float)  # numpy array
     return obs, reward, done, info
 
   def render(self, *args, **kwargs):

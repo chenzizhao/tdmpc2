@@ -54,4 +54,8 @@ class TensorWrapper(gym.Wrapper):
 			assert isinstance(info, dict)
 			info['success'] = torch.tensor(info['success'])
 			info['terminated'] = torch.tensor(info['terminated'])
+			for env_idx in range(len(done)):
+				if done[env_idx]:
+					assert info['_final_obs'][env_idx], 'Final obs not set in info'
+					info['final_obs'][env_idx] = self._obs_to_tensor(info['final_obs'][env_idx])
 		return self._obs_to_tensor(obs), torch.tensor(reward, dtype=torch.float32), done, info

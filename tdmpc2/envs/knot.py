@@ -55,7 +55,7 @@ class OldStepWrapper(gym.Wrapper):
     return obs
 
 
-def make_env(cfg, rank=1, old_api=True):
+def make_env(cfg, rank=1, old_api=True, **kwargs):
   split = "tr"
   logdir = cfg.work_dir / split / f"{rank:04d}"
   task = cfg.task  # tie_unknot
@@ -70,6 +70,7 @@ def make_env(cfg, rank=1, old_api=True):
     height=size,
     width=size,
     output_pixels=output_pixels,
+    **kwargs,
   )
   if output_pixels:
     env = Pixels(env, cfg)

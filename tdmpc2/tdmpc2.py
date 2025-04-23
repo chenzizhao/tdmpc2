@@ -137,13 +137,13 @@ class TDMPC2(torch.nn.Module):
 		return G + discount * (1-termination) * self.model.Q(z, action, task, return_type='avg')
 
 	@torch.no_grad()
-	def _plan(self, obs, t0=False, eval_mode=False, task=None):
+	def _plan(self, obs, t0, eval_mode=False, task=None):
 		"""
 		Plan a sequence of actions using the learned world model.
 
 		Args:
 			z (torch.Tensor): Latent state from which to plan.
-			t0 (bool): Whether this is the first observation in the episode.
+			t0 (torch.Tensor[bool]): Whether this is the first observation in the episode. (num_env,)
 			eval_mode (bool): Whether to use the mean of the action distribution.
 			task (Torch.Tensor): Task index (only used for multi-task experiments).
 
@@ -164,8 +164,8 @@ class TDMPC2(torch.nn.Module):
 		z = z.unsqueeze(1).repeat(1, self.cfg.num_samples, 1)
 		mean = torch.zeros(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
 		std = self.cfg.max_std*torch.ones(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
-		if not t0:
-			mean[:, :-1] = self._prev_mean[:, 1:]
+		# NOTE: only take prev mean from continuing envs.
+		mean[~t0, :-1] = self._prev_mean[~t0, 1:]
 		actions = torch.empty(self.cfg.num_envs, self.cfg.horizon, self.cfg.num_samples, self.cfg.action_dim, device=self.device)
 		if self.cfg.num_pi_trajs > 0:
 			actions[:, :, :self.cfg.num_pi_trajs] = pi_actions

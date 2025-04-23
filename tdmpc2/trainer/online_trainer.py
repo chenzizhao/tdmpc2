@@ -3,6 +3,7 @@ from time import time
 import torch
 from tensordict.tensordict import TensorDict
 from trainer.base import Trainer
+from typing import Dict, List
 
 
 class OnlineTrainer(Trainer):
@@ -55,68 +56,87 @@ class OnlineTrainer(Trainer):
 		else:
 			obs = obs.unsqueeze(0).cpu()
 		if action is None:
-			action = torch.full_like(self.env.rand_act(), float('nan'))
+			action = torch.full(self.env.action_space.shape, float('nan'))
 		if reward is None:
-			reward = torch.tensor(float('nan')).repeat(self.cfg.num_envs)
+			reward = torch.tensor(float('nan'))
 		if terminated is None:
-			terminated = torch.tensor(float('nan')).repeat(self.cfg.num_envs)
-		td = TensorDict(dict(
+			terminated = torch.tensor(float('nan'))
+		td = TensorDict(
 			obs=obs,
 			action=action.unsqueeze(0),
 			reward=reward.unsqueeze(0),
 			terminated=terminated.unsqueeze(0),
-		), batch_size=(1, self.cfg.num_envs,))
+		batch_size=(1,))
 		return td
 
 	def train(self):
 		"""Train a TD-MPC2 agent."""
-		train_metrics, done, eval_next = {}, torch.tensor(True), True
+		train_metrics = {}
+		obs = self.env.reset()
+		done = torch.full((self.cfg.num_envs,), True)
+		eval_next = True
+		self._tds: Dict[int, List[TensorDict]] = {
+      i: [self.to_td(obs[i])]
+			for i in range(self.cfg.num_envs)
+    }  # holds td/step for each env, over one episode
+
 		while self._step <= self.cfg.steps:
-			# Evaluate agent periodically
+      # Evaluate agent periodically
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
-			# Reset environment
+      # Reset environment  # now handled by autoreset in async vec env
 			if done.any():
-				assert done.all(), 'Vectorized environments must reset all environments at once.'
-				# TODO: consult sb3
 				if eval_next:
-					eval_metrics = self.eval()
-					eval_metrics.update(self.common_metrics())
-					self.logger.log(eval_metrics, 'eval')
-					self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
-					eval_next = False
+	        # TODO: bring back eval()
+					print("eval during training is disabled for now")
+        # 	eval_metrics = self.eval()
+        # 	eval_metrics.update(self.common_metrics())
+        # 	self.logger.log(eval_metrics, 'eval')
+        # 	self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
+        # 	eval_next = False
 
-				if self._step > 0:
-					tds = torch.cat(self._tds)
-					train_metrics.update(
-						episode_reward=tds['reward'].nansum(0).mean(),
-						episode_success=info['success'].nanmean(),
-					)
-					train_metrics.update(self.common_metrics())
-					self.logger.log(train_metrics, 'train')
-					self._ep_idx = self.buffer.add(tds)
-
-				obs = self.env.reset()
-				self._tds = [self.to_td(obs)]
+			if self._step > 0:
+				for env_idx in range(self.cfg.num_envs):
+					if done[env_idx]:  # log, add to buffer, and reset
+						td = torch.cat(self._tds[env_idx])
+						train_metrics.update(
+							episode_reward=td["reward"].nansum(0).item(),  # sum over episode
+							episode_success=info["success"][env_idx].item(),
+							episode_length=len(td),
+							episode_terminated=td["terminated"][-1].item(),  # or info["terminated"][env_idx]
+						)
+						train_metrics.update(self.common_metrics())
+						self.logger.log(train_metrics, "train")
+						self._ep_idx = self.buffer.add(td)
+						self._tds[env_idx] = [self.to_td(obs[env_idx])]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				action = self.agent.act(obs, t0=len(self._tds)==1)
+				action = self.agent.act(obs, t0=done)
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
-			self._tds.append(self.to_td(obs, action, reward, info['terminated']))
+
+			# TODO: is this slow? adding to buffer one env by one
+			for env_idx in range(self.cfg.num_envs):
+				ob_ = info["final_obs"][env_idx] if done[env_idx] else obs[env_idx]
+				self._tds[env_idx].append(
+					self.to_td(
+						ob_, action[env_idx], reward[env_idx], info["terminated"][env_idx]
+					)
+				)
 
 			# Update agent
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
 					num_updates = int(self.cfg.seed_steps / self.cfg.steps_per_update)
-					print('Pretraining agent on seed data...')
+					print("Pretraining agent on seed data...")
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
+				_train_metrics = dict()
 				for _ in range(num_updates):
-					_train_metrics = self.agent.update(self.buffer)
+					_train_metrics.update(self.agent.update(self.buffer))
 				train_metrics.update(_train_metrics)
 
 			self._step += self.cfg.num_envs

@@ -4,12 +4,12 @@ defaults:
 # environment
 task: tie_unknot #
 obs: rgb #
-episodic: false #
-num_envs: 2  #
+episodic: true #
+num_envs: 16  #
 
 # evaluation
 checkpoint: ???
-eval_episodes: 10
+eval_episodes: 2 # DEBUG
 eval_freq: 1_000  # belongs to tr split (not eval split)
 
 # training
