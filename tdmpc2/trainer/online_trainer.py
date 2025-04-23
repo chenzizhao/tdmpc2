@@ -58,10 +58,13 @@ class OnlineTrainer(Trainer):
 			action = torch.full_like(self.env.rand_act(), float('nan'))
 		if reward is None:
 			reward = torch.tensor(float('nan')).repeat(self.cfg.num_envs)
+		if terminated is None:
+			terminated = torch.tensor(float('nan')).repeat(self.cfg.num_envs)
 		td = TensorDict(dict(
 			obs=obs,
 			action=action.unsqueeze(0),
 			reward=reward.unsqueeze(0),
+			terminated=terminated.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
 		return td
 

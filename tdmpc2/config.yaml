@@ -3,7 +3,7 @@ defaults:
 
 # environment
 task: tie_unknot #
-obs: state #
+obs: rgb #
 episodic: false #
 num_envs: 2  #
 

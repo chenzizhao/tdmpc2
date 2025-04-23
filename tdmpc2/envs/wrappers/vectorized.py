@@ -48,8 +48,8 @@ class Vectorized:
     # old api
     obs, reward, term, trunc, info = self.env.step(action)
     done = term | trunc
-    info["terminated"] = term
-    info["success"] = info["is_success"]
+    info["terminated"] = term.astype(float)
+    info["success"] = info["is_success"].astype(float)
     return obs, reward, done, info
 
   def render(self, *args, **kwargs):

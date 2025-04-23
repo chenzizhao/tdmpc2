@@ -219,27 +219,20 @@ class TDMPC2(torch.nn.Module):
 		Returns:
 			float: Loss of the policy update.
 		"""
-		action, info = self.model.pi(zs, task)
-		qs = self.model.Q(zs, action, task, return_type='avg', detach=True)
+		_, pis, log_pis, _ = self.model.pi(zs, task)
+		qs = self.model.Q(zs, pis, task, return_type='avg', detach=True)
 		self.scale.update(qs[0])
 		qs = self.scale(qs)
 
 		# Loss is a weighted sum of Q-values
 		rho = torch.pow(self.cfg.rho, torch.arange(len(qs), device=self.device))
-		pi_loss = (-(self.cfg.entropy_coef * info["scaled_entropy"] + qs).mean(dim=(1,2)) * rho).mean()
+		pi_loss = ((self.cfg.entropy_coef * log_pis - qs).mean(dim=(1,2)) * rho).mean()
 		pi_loss.backward()
 		pi_grad_norm = torch.nn.utils.clip_grad_norm_(self.model._pi.parameters(), self.cfg.grad_clip_norm)
 		self.pi_optim.step()
 		self.pi_optim.zero_grad(set_to_none=True)
 
-		info = TensorDict({
-			"pi_loss": pi_loss,
-			"pi_grad_norm": pi_grad_norm,
-			"pi_entropy": info["entropy"],
-			"pi_scaled_entropy": info["scaled_entropy"],
-			"pi_scale": self.scale.value,
-		})
-		return info
+		return pi_loss.detach(), pi_grad_norm
 
 	@torch.no_grad()
 	def _td_target(self, next_z, reward, terminated, task):
@@ -255,7 +248,7 @@ class TDMPC2(torch.nn.Module):
 		Returns:
 			torch.Tensor: TD-target.
 		"""
-		action, _ = self.model.pi(next_z, task)
+		action = self.model.pi(next_z, task)[1]
 		discount = self.discount[task].unsqueeze(-1) if self.cfg.multitask else self.discount
 		return reward + discount * (1-terminated) * self.model.Q(next_z, action, task, return_type='min', target=True)
 
@@ -312,7 +305,7 @@ class TDMPC2(torch.nn.Module):
 		self.optim.zero_grad(set_to_none=True)
 
 		# Update policy
-		pi_info = self.update_pi(zs.detach(), task)
+		pi_loss, pi_grad_norm = self.update_pi(zs.detach(), task)
 
 		# Update target Q-functions
 		self.model.soft_update_target_Q()
@@ -323,13 +316,18 @@ class TDMPC2(torch.nn.Module):
 			"consistency_loss": consistency_loss,
 			"reward_loss": reward_loss,
 			"value_loss": value_loss,
+			"pi_loss": pi_loss,
 			"termination_loss": termination_loss,
 			"total_loss": total_loss,
 			"grad_norm": grad_norm,
+			"pi_grad_norm": pi_grad_norm,
+			"pi_scale": self.scale.value,
 		})
 		if self.cfg.episodic:
-			info.update(math.termination_statistics(torch.sigmoid(termination_pred[-1]), terminated[-1]))
-		info.update(pi_info)
+			info.update(
+				math.termination_statistics(torch.sigmoid(termination_pred[-1]), terminated[-1])
+			)
+
 		return info.detach().mean()
 
 	def update(self, buffer):
