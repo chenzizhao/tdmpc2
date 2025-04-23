@@ -115,7 +115,7 @@ class TDMPC2(torch.nn.Module):
 		if self.cfg.mpc:
 			return self.plan(obs, t0=t0, eval_mode=eval_mode, task=task).cpu()
 		z = self.model.encode(obs, task)
-		action, info = self.model.pi(z, task)
+		action, info = self.model.pi(z, task)   # bypassed by cfg.mpc
 		if eval_mode:
 			action = info["mean"]
 		return action[0].cpu()
@@ -133,7 +133,7 @@ class TDMPC2(torch.nn.Module):
 			discount = discount * discount_update
 			if self.cfg.episodic:
 				termination = torch.clip(termination + (self.model.termination(z, task) > 0.5).float(), max=1.)
-		action, _ = self.model.pi(z, task)
+		action = self.model.pi(z, task)[1]
 		return G + discount * (1-termination) * self.model.Q(z, action, task, return_type='avg')
 
 	@torch.no_grad()

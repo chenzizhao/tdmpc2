@@ -45,7 +45,7 @@ class OnlineTrainer(Trainer):
 				self.logger.video.save(self._step)
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
-			episode_success=info['success'].mean(),
+			episode_success=info['success'].mean(),  # TODO: fix vecenv + episodic
 		)
 
 	def to_td(self, obs, action=None, reward=None, terminated=None):

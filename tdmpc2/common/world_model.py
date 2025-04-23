@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 
 from common import layers, math, init
-from tensordict import TensorDict
 from tensordict.nn import TensorDictParams
 
 
@@ -139,7 +138,7 @@ class WorldModel(nn.Module):
 		if unnormalized:
 			return self._termination(z)
 		return torch.sigmoid(self._termination(z))
-		
+
 
 	def pi(self, z, task):
 		"""
@@ -150,49 +149,35 @@ class WorldModel(nn.Module):
 		if self.cfg.multitask:
 			z = self.task_emb(z, task)
 
-		# Gaussian policy prior
-		mean, log_std = self._pi(z).chunk(2, dim=-1)
-		log_std = math.log_std(log_std, self.log_std_min, self.log_std_dif)
-		eps = torch.randn_like(mean)
+    # Gaussian policy prior
+    mu, log_std = self._pi(z).chunk(2, dim=-1)
+    log_std = math.log_std(log_std, self.log_std_min, self.log_std_dif)
+    eps = torch.randn_like(mu)
 
-		if self.cfg.multitask: # Mask out unused action dimensions
-			mean = mean * self._action_masks[task]
-			log_std = log_std * self._action_masks[task]
-			eps = eps * self._action_masks[task]
-			action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
-		else: # No masking
-			action_dims = None
+    if self.cfg.multitask:  # Mask out unused action dimensions
+      mu = mu * self._action_masks[task]
+      log_std = log_std * self._action_masks[task]
+      eps = eps * self._action_masks[task]
+      action_dims = self._action_masks.sum(-1)[task].unsqueeze(-1)
+    else:  # No masking
+      action_dims = None
 
-		log_prob = math.gaussian_logprob(eps, log_std)
+    log_pi = math.gaussian_logprob(eps, log_std, size=action_dims)
+    pi = mu + eps * log_std.exp()
+    mu, pi, log_pi = math.squash(mu, pi, log_pi)
 
-		# Scale log probability by action dimensions
-		size = eps.shape[-1] if action_dims is None else action_dims
-		scaled_log_prob = log_prob * size
+    return mu, pi, log_pi, log_std
 
-		# Reparameterization trick
-		action = mean + eps * log_std.exp()
-		mean, action, log_prob = math.squash(mean, action, log_prob)
-
-		entropy_scale = scaled_log_prob / (log_prob + 1e-8)
-		info = TensorDict({
-			"mean": mean,
-			"log_std": log_std,
-			"action_prob": 1.,
-			"entropy": -log_prob,
-			"scaled_entropy": -log_prob * entropy_scale,
-		})
-		return action, info
-
-	def Q(self, z, a, task, return_type='min', target=False, detach=False):
-		"""
-		Predict state-action value.
-		`return_type` can be one of [`min`, `avg`, `all`]:
-			- `min`: return the minimum of two randomly subsampled Q-values.
-			- `avg`: return the average of two randomly subsampled Q-values.
-			- `all`: return all Q-values.
-		`target` specifies whether to use the target Q-networks or not.
-		"""
-		assert return_type in {'min', 'avg', 'all'}
+  def Q(self, z, a, task, return_type="min", target=False, detach=False):
+    """
+    Predict state-action value.
+    `return_type` can be one of [`min`, `avg`, `all`]:
+            - `min`: return the minimum of two randomly subsampled Q-values.
+            - `avg`: return the average of two randomly subsampled Q-values.
+            - `all`: return all Q-values.
+    `target` specifies whether to use the target Q-networks or not.
+    """
+    assert return_type in {"min", "avg", "all"}
 
 		if self.cfg.multitask:
 			z = self.task_emb(z, task)

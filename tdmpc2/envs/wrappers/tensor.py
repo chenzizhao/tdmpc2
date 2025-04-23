@@ -1,6 +1,4 @@
-from collections import defaultdict
-
-import gymnasium as gym
+import gym
 import numpy as np
 import torch
 
@@ -12,7 +10,9 @@ class TensorWrapper(gym.Wrapper):
 
 	def __init__(self, env):
 		super().__init__(env)
-		self._wrapped_vectorized = env.__class__.__name__ == 'Vectorized'
+		# self._wrapped_vectorized = env.__class__.__name__ == 'Vectorized'
+		# self._wrapped_vectorized = getattr(env, 'num_envs', -1) > 1
+		self._wrapped_vectorized = hasattr(env, 'num_envs')
 
 	def rand_act(self):
 		if self._wrapped_vectorized:

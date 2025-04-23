@@ -3,8 +3,9 @@ defaults:
 
 # environment
 task: tie_unknot #
-obs: rgb #
-episodic: true #
+obs: state #
+episodic: false #
+num_envs: 2  #
 
 # evaluation
 checkpoint: ???

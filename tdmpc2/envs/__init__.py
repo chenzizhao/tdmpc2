@@ -62,31 +62,27 @@ def make_multitask_env(cfg):
 
 
 def make_env(cfg):
-	"""
-	Make an environment for TD-MPC2 experiments.
-	"""
-	# gym.logger.set_level(40)
-	if cfg.multitask:
-		env = make_multitask_env(cfg)
-	else:
-		env = None
-		for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env, make_mujoco_env, make_knot_env]:
-			try:
-				env = fn(cfg)
-				break
-			except ValueError:
-				pass
-		if env is None:
-			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
-		assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
-			'Vectorized environments only support state observations.'
-		env = Vectorized(cfg, fn)
-		env = TensorWrapper(env)
-	try: # Dict
-		cfg.obs_shape = {k: v.shape for k, v in env.observation_space.spaces.items()}
-	except: # Box
-		cfg.obs_shape = {cfg.get('obs', 'state'): env.observation_space.shape}
-	cfg.action_dim = env.action_space.shape[0]
-	cfg.episode_length = getattr(env, 'max_episode_steps', None) or env.get_wrapper_attr('max_episode_steps')
-	cfg.seed_steps = max(1000, 5*cfg.episode_length) * cfg.num_envs
-	return env
+  """
+  Make an environment for TD-MPC2 experiments.
+  """
+  # gym.logger.set_level(40)
+  if cfg.multitask:
+    env = make_multitask_env(cfg)
+  else:
+    fn = make_knot_env
+    # assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
+    # 'Vectorized environments only support state observations.'
+    env = Vectorized(cfg, fn)
+    env = TensorWrapper(env)
+  if hasattr(env.observation_space, "spaces"):
+    cfg.obs_shape = {
+      k: v.shape for k, v in env.observation_space.spaces.items()
+    }
+  else:  # box
+    cfg.obs_shape = {cfg.get("obs", "state"): env.observation_space.shape}
+  cfg.action_dim = env.action_space.shape[0]
+  cfg.episode_length = getattr(
+    env, "max_episode_steps", None
+  ) or env.get_wrapper_attr("max_episode_steps")
+  cfg.seed_steps = max(1000, 5 * cfg.episode_length) * cfg.num_envs
+  return env

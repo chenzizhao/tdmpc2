@@ -44,7 +44,7 @@ class Pixels(gym.Wrapper):
 
 class OldStepWrapper(gym.Wrapper):
   def step(self, action):
-    obs, reward, trunc, term, info = self.env.step(action)
+    obs, reward, term, trunc, info = self.env.step(action)
     done = trunc or term
     info["terminated"] = term
     info["success"] = info["is_success"]
@@ -55,22 +55,26 @@ class OldStepWrapper(gym.Wrapper):
     return obs
 
 
-def make_env(cfg):
+def make_env(cfg, rank=1, old_api=True):
   split = "tr"
-  logdir = cfg.work_dir / split / "0001"
+  logdir = cfg.work_dir / split / f"{rank:04d}"
   task = cfg.task  # tie_unknot
-  assert cfg.obs in ("rgb",)
+  size = 128
+  assert cfg.obs in ("rgb", "state")
+  output_pixels = cfg.obs == "rgb"
   env = gym.make(
     "knotgym/Unknot-v0",
     task=task,
     logdir=logdir,
     split=split,
-    height=128,
-    width=128,
+    height=size,
+    width=size,
+    output_pixels=output_pixels,
   )
-  env = Pixels(env, cfg)
-  env = OldStepWrapper(env)
-  # TODO: use old step done api
+  if output_pixels:
+    env = Pixels(env, cfg)
+  if old_api:
+    env = OldStepWrapper(env)
 
   # cfg.discount_max = 0.99  # TODO: temporarily hardcode for these envs, makes comparison to other codebases easier
   # cfg.rho = 0.7  # TODO: increase rho for episodic tasks since termination always happens at the end of a sequence
