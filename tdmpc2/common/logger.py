@@ -242,7 +242,7 @@ class Logger:
 			)
 		if category == "train" and self._save_train_json:
 			assert "step" in d, "step must be in the metrics dict"
-			line = json.dumps(d, indent=4) + "\n"
+			line = json.dumps(d) + "\n"
 			with open(self._log_dir / "metrics.jsonl", "a") as f:
 				f.write(line)
 		self._print(d, category)

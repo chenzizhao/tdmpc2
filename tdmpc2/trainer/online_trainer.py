@@ -100,9 +100,10 @@ class OnlineTrainer(Trainer):
 				for env_idx in range(self.cfg.num_envs):
 					if done[env_idx]:  # log, add to buffer, and reset
 						td = torch.cat(self._tds[env_idx])
+						reward = td["reward"].nansum(0).item()  # sum over episode
 						train_metrics.update(
-							episode_reward=td["reward"].nansum(0).item(),  # sum over episode
-							episode_success=info["success"][env_idx].item(),
+							episode_reward=reward,
+							episode_success=1.0 if reward > 0 else 0.0,
 							episode_length=len(td),
 							episode_terminated=td["terminated"][-1].item(),  # or info["terminated"][env_idx]
 						)

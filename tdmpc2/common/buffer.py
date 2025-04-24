@@ -43,7 +43,7 @@ class Buffer():
 			storage=storage,
 			sampler=self._sampler,
 			pin_memory=False,
-			prefetch=0,
+			prefetch=self.cfg.buffer_prefetch,
 			batch_size=self._batch_size,
 		)
 
