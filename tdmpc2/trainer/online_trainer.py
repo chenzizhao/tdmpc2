@@ -1,9 +1,10 @@
 from time import time
+from typing import Dict, List
 
 import torch
 from tensordict.tensordict import TensorDict
+from tqdm import tqdm
 from trainer.base import Trainer
-from typing import Dict, List
 
 
 class OnlineTrainer(Trainer):
@@ -136,7 +137,7 @@ class OnlineTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				_train_metrics = dict()
-				for _ in range(num_updates):
+				for _ in tqdm(range(num_updates), desc='agent.update', disable=num_updates<10):
 					_train_metrics.update(self.agent.update(self.buffer))
 				train_metrics.update(_train_metrics)
 
