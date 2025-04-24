@@ -6,7 +6,7 @@ import warnings
 from envs.wrappers.multitask import MultitaskWrapper
 from envs.wrappers.tensor import TensorWrapper
 from envs.wrappers.vectorized import Vectorized
-
+import math
 
 def missing_dependencies(task):
 	raise ValueError(f'Missing dependencies for task {task}; install dependencies to use this environment.')
@@ -84,5 +84,8 @@ def make_env(cfg):
   cfg.episode_length = getattr(
     env, "max_episode_steps", None
   ) or env.get_wrapper_attr("max_episode_steps")
-  cfg.seed_steps = max(1000, 5 * cfg.episode_length) * cfg.num_envs
+
+  # cfg.seed_steps = max(1000, 5 * cfg.episode_length) * cfg.num_envs
+  seed_steps = max(1000, 5 * cfg.episode_length)
+  cfg.seed_steps = math.ceil(seed_steps / cfg.num_envs) * cfg.num_envs
   return env
