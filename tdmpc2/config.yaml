@@ -20,14 +20,14 @@ reward_coef: 0.1
 value_coef: 0.1
 termination_coef: 1
 consistency_coef: 20
-rho: 0.5
+rho: 0.5  # TODO: 0.7 for episodic mujoco tasks 
 lr: 3e-4
 enc_lr_scale: 0.3
 grad_clip_norm: 20
 tau: 0.01
 discount_denom: 5
 discount_min: 0.95
-discount_max: 0.995
+discount_max: 0.995  # TODO: 0.99 for episodic mujoco tasks
 buffer_size: 1_000_000
 exp_name: default
 data_dir: ???
