@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from termcolor import colored
 import json
+import torch
 
 from common import TASK_SET
 
@@ -242,6 +243,11 @@ class Logger:
 			)
 		if category == "train" and self._save_train_json:
 			assert "step" in d, "step must be in the metrics dict"
+			for k in d:
+				if isinstance(d[k], torch.Tensor):
+					d[k] = d[k].cpu().numpy()
+				if isinstance(d[k], np.ndarray):
+					d[k] = d[k].item()
 			line = json.dumps(d) + "\n"
 			with open(self._log_dir / "metrics.jsonl", "a") as f:
 				f.write(line)
