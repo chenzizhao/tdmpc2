@@ -88,13 +88,13 @@ class OnlineTrainer(Trainer):
       # Reset environment  # now handled by autoreset in async vec env
 			if done.any():
 				if eval_next:
-	        # TODO: bring back eval()
 					print("eval during training is disabled for now")
+	      # TODO: bring back eval()
         # 	eval_metrics = self.eval()
         # 	eval_metrics.update(self.common_metrics())
         # 	self.logger.log(eval_metrics, 'eval')
-        # 	self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
-        # 	eval_next = False
+					self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
+					eval_next = False
 
 			if self._step > 0:
 				for env_idx in range(self.cfg.num_envs):

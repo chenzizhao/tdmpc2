@@ -6,6 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 from termcolor import colored
+import json
 
 from common import TASK_SET
 
@@ -110,6 +111,7 @@ class Logger:
 		self._log_dir = make_dir(cfg.work_dir)
 		self._model_dir = make_dir(self._log_dir / "models")
 		self._save_csv = cfg.save_csv
+		self._save_train_json = cfg.save_train_json
 		self._save_agent = cfg.save_agent
 		self._group = cfg_to_group(cfg)
 		self._seed = cfg.seed
@@ -238,4 +240,9 @@ class Logger:
 			pd.DataFrame(np.array(self._eval)).to_csv(
 				self._log_dir / "eval.csv", header=keys, index=None
 			)
+		if category == "train" and self._save_train_json:
+			assert "step" in d, "step must be in the metrics dict"
+			line = json.dumps(d, indent=4) + "\n"
+			with open(self._log_dir / "metrics.jsonl", "a") as f:
+				f.write(line)
 		self._print(d, category)
