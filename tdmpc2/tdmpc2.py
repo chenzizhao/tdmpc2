@@ -165,7 +165,11 @@ class TDMPC2(torch.nn.Module):
 		mean = torch.zeros(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
 		std = self.cfg.max_std*torch.ones(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
 		# NOTE: only take prev mean from continuing envs.
-		mean[~t0, :-1] = self._prev_mean[~t0, 1:]
+		mean[:, :-1] = torch.where(
+			t0.unsqueeze(1).unsqueeze(1),  # (num_envs, 1, 1)
+			mean[:, :-1],  # (num_envs, horizon-1, action_dim)
+			self._prev_mean[:, 1:]  # (num_envs, horizon-1, action_dim)
+		)
 		actions = torch.empty(self.cfg.num_envs, self.cfg.horizon, self.cfg.num_samples, self.cfg.action_dim, device=self.device)
 		if self.cfg.num_pi_trajs > 0:
 			actions[:, :, :self.cfg.num_pi_trajs] = pi_actions
