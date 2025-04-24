@@ -103,7 +103,7 @@ class OnlineTrainer(Trainer):
 						reward = td["reward"].nansum(0).item()  # sum over episode
 						train_metrics.update(
 							episode_reward=reward,
-							episode_success=1.0 if reward > 0 else 0.0,
+							episode_success=1.0 if reward >= 0 else 0.0,  # NOTE: hack to get is_success
 							episode_length=len(td),
 							episode_terminated=td["terminated"][-1].item(),  # or info["terminated"][env_idx]
 						)
@@ -114,7 +114,7 @@ class OnlineTrainer(Trainer):
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				action = self.agent.act(obs, t0=done)
+				action = self.agent.act(obs, t0=torch.tensor(done).cuda())
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
