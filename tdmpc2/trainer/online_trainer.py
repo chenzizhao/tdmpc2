@@ -132,7 +132,7 @@ class OnlineTrainer(Trainer):
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
 					num_updates = int(self.cfg.seed_steps / self.cfg.steps_per_update)
-					print("Pretraining agent on seed data...")
+					print(f"Pretraining agent on seed data... {num_updates} updates")
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				_train_metrics = dict()
