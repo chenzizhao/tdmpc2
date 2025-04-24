@@ -81,7 +81,7 @@ save_agent: true
 seed: 1
 
 # convenience
-work_dir: ???
+work_dir: results-baselines-tdmpc2  #
 task_title: ???
 multitask: ???
 tasks: ???
