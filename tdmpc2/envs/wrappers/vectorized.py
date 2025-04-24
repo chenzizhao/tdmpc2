@@ -2,7 +2,6 @@ import gymnasium
 import torch
 from gym import spaces
 from functools import partial as bind
-import numpy as np
 
 
 class Vectorized:
@@ -40,7 +39,7 @@ class Vectorized:
       dtype=act_space.dtype,
       shape=act_space.shape,
     )
-    self.max_episode_steps = cfg.episode_length  # TODO: get from env or cfg
+    self.max_episode_steps = cfg.episode_length
     self.num_envs = self.env.num_envs
 
   def rand_act(self):
