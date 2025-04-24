@@ -57,7 +57,7 @@ class OldStepWrapper(gym.Wrapper):
 
 def make_env(cfg, rank=1, old_api=True, **kwargs):
   split = "tr"
-  logdir = cfg.work_dir / split / f"{rank:04d}"
+  logdir = cfg.work_dir / split / f"{rank:04d}" if rank == 1 else None
   task = cfg.task  # tie_unknot
   size = 128
   assert cfg.obs in ("rgb", "state")
