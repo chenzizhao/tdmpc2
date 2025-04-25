@@ -53,7 +53,9 @@ class Vectorized:
     obs, reward, term, trunc, info = self.env.step(action)
     done = term | trunc
     info["terminated"] = term.astype(float)  # numpy array
-    info["success"] = info["is_success"].astype(float)  # numpy array
+    if "success" not in info and "is_success" in info:
+      info["success"] = info["is_success"]
+    info["success"] = info["success"].astype(float)  # numpy array
     return obs, reward, done, info
 
   def render(self, *args, **kwargs):
