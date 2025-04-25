@@ -96,13 +96,13 @@ class TDMPC2(torch.nn.Module):
 		return
 
 	@torch.no_grad()
-	def act(self, obs, t0=False, eval_mode=False, task=None):
+	def act(self, obs, t0, eval_mode=False, task=None):
 		"""
 		Select an action by planning in the latent space of the world model.
 
 		Args:
 			obs (torch.Tensor): Observation from the environment.
-			t0 (bool): Whether this is the first observation in the episode.
+			t0 (torch.Tensor[bool]): Whether this is the first observation in the episode.
 			eval_mode (bool): Whether to use the mean of the action distribution.
 			task (int): Task index (only used for multi-task experiments).
 
@@ -115,10 +115,10 @@ class TDMPC2(torch.nn.Module):
 		if self.cfg.mpc:
 			return self.plan(obs, t0=t0, eval_mode=eval_mode, task=task).cpu()
 		z = self.model.encode(obs, task)
-		action, info = self.model.pi(z, task)   # bypassed by cfg.mpc
+		mu, action, *_ = self.model.pi(z, task)
 		if eval_mode:
-			action = info["mean"]
-		return action[0].cpu()
+			action = mu
+		return action.cpu()
 
 	@torch.no_grad()
 	def _estimate_value(self, z, actions, task):
@@ -128,7 +128,7 @@ class TDMPC2(torch.nn.Module):
 		for t in range(self.cfg.horizon):
 			reward = math.two_hot_inv(self.model.reward(z, actions[:, t], task), self.cfg)
 			z = self.model.next(z, actions[:, t], task)
-			G = G + discount * reward
+			G = G + discount * (1-termination) * reward
 			discount_update = self.discount[torch.tensor(task)] if self.cfg.multitask else self.discount
 			discount = discount * discount_update
 			if self.cfg.episodic:
@@ -186,7 +186,7 @@ class TDMPC2(torch.nn.Module):
 				actions = actions * self.model._action_masks[task]
 
 			# Compute elite actions
-			value = self._estimate_value(z, actions, task).nan_to_num(0)
+			value = self._estimate_value(z, actions, task).nan_to_num(0)  # NOTE: is this num_envs proof?
 			elite_idxs = torch.topk(value.squeeze(2), self.cfg.num_elites, dim=1).indices
 			elite_value = torch.gather(value, 1, elite_idxs.unsqueeze(2))
 			elite_actions = torch.gather(actions, 2, elite_idxs.unsqueeze(1).unsqueeze(3).expand(-1, self.cfg.horizon, -1, self.cfg.action_dim))
