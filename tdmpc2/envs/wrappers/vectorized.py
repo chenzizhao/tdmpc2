@@ -55,7 +55,8 @@ class Vectorized:
     info["terminated"] = term.astype(float)  # numpy array
     if "success" not in info and "is_success" in info:
       info["success"] = info["is_success"]
-    info["success"] = info["success"].astype(float)  # numpy array
+    if "success" in info:
+      info["success"] = info["success"].astype(float)  # numpy array
     return obs, reward, done, info
 
   def render(self, *args, **kwargs):

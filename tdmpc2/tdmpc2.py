@@ -124,7 +124,7 @@ class TDMPC2(torch.nn.Module):
 	def _estimate_value(self, z, actions, task):
 		"""Estimate value of a trajectory starting at latent state z and executing given actions."""
 		G, discount = 0, 1
-		termination = torch.zeros(self.cfg.num_samples, 1, dtype=torch.float32, device=z.device)
+		termination = torch.zeros(self.cfg.num_envs, self.cfg.num_samples, 1, dtype=torch.float32, device=z.device)
 		for t in range(self.cfg.horizon):
 			reward = math.two_hot_inv(self.model.reward(z, actions[:, t], task), self.cfg)
 			z = self.model.next(z, actions[:, t], task)

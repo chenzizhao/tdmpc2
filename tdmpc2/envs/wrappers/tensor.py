@@ -52,8 +52,11 @@ class TensorWrapper(gym.Wrapper):
 				info['success'] = torch.zeros(len(done))
 		else:
 			assert isinstance(info, dict)
-			info['success'] = torch.tensor(info['success'])
 			info['terminated'] = torch.tensor(info['terminated'])
+			if "success" in info:
+				info['success'] = torch.tensor(info['success'])
+			else:
+				info['success'] = torch.zeros(len(done))
 			for env_idx in range(len(done)):
 				if done[env_idx]:
 					assert info['_final_obs'][env_idx], 'Final obs not set in info'

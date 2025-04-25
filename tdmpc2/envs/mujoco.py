@@ -34,7 +34,7 @@ class MuJoCoWrapper(gym.Wrapper):
 		return self.env.render(**kwargs)
 
 
-def make_env(cfg):
+def make_env(cfg, rank=-1):
 	"""
 	Make classic/MuJoCo environment.
 	"""

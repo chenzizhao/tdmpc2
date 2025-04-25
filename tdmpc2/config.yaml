@@ -55,7 +55,8 @@ vmin: -10
 vmax: +10
 
 # architecture
-model_size: 5  #
+model_size: 5  
+# for rgb: model_size=1 throws a shape mismatch in self.model.pi and z=self.model.encode(obs, task)
 num_enc_layers: 2
 enc_dim: 256
 num_channels: 32
@@ -75,7 +76,7 @@ save_csv: true
 save_train_json: true
 
 # misc
-compile: false  #
+compile: true  #
 save_video: true
 save_agent: true
 seed: 1
