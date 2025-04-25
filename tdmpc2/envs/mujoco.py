@@ -5,7 +5,7 @@ MUJOCO_TASKS = {
 	'mujoco-walker': 'Walker2d-v4',
 	'mujoco-halfcheetah': 'HalfCheetah-v4',
 	'bipedal-walker': 'BipedalWalker-v3',
-	'lunarlander-continuous': 'LunarLander-v2',
+	'lunarlander-continuous': 'LunarLander-v3',
 }
 
 class MuJoCoWrapper(gym.Wrapper):
@@ -42,10 +42,13 @@ def make_env(cfg, rank=-1):
 		raise ValueError('Unknown task:', cfg.task)
 	assert cfg.obs == 'state', 'This task only supports state observations.'
 	if cfg.task == 'lunarlander-continuous':
+		assert cfg.episode_length == 500
 		env = gym.make(MUJOCO_TASKS[cfg.task], continuous=True, render_mode='rgb_array', max_episode_steps=500)
 	elif cfg.task == 'bipedal-walker':
+		assert cfg.episode_length == 1600
 		env = gym.make(MUJOCO_TASKS[cfg.task], render_mode='rgb_array', max_episode_steps=1600)
 	else:
+		assert cfg.episode_length == 1000
 		env = gym.make(MUJOCO_TASKS[cfg.task], render_mode='rgb_array', max_episode_steps=1000)
 	env = MuJoCoWrapper(env, cfg)
 	cfg.discount_max = 0.99 # TODO: temporarily hardcode for these envs, makes comparison to other codebases easier

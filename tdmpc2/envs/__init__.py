@@ -73,7 +73,8 @@ def make_env(cfg):
     fn = {
 			"tie_unknot": bind(make_knot_env, old_api= cfg.num_envs > 1),
 			"mujoco-walker": make_mujoco_env,
-			"bipedal-walker": make_mujoco_env
+			"bipedal-walker": make_mujoco_env,
+			"lunarlander-continuous": make_mujoco_env,
 		}[cfg.task]
     # assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
     # 'Vectorized environments only support state observations.'
@@ -86,9 +87,6 @@ def make_env(cfg):
   else:  # box
     cfg.obs_shape = {cfg.get("obs", "state"): env.observation_space.shape}
   cfg.action_dim = env.action_space.shape[0]
-  cfg.episode_length = getattr(
-    env, "max_episode_steps", None
-  ) or env.get_wrapper_attr("max_episode_steps")
 
   # cfg.seed_steps = max(1000, 5 * cfg.episode_length) * cfg.num_envs
   seed_steps = max(1000, 5 * cfg.episode_length)
