@@ -16,9 +16,7 @@ class Vectorized:
     print(f"Creating {cfg.num_envs} environments...")
     self.env = gymnasium.vector.AsyncVectorEnv(
       [
-        bind(
-          env_fn, cfg, rank=i + 1, old_api=False, duration=cfg.episode_length
-        )
+        bind(env_fn, cfg, rank=i + 1)
         for i in range(cfg.num_envs)
       ],
       autoreset_mode="SameStep",  # https://farama.org/Vector-Autoreset-Mode

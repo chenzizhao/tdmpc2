@@ -62,6 +62,8 @@ def make_env(cfg, rank=1, old_api=True, **kwargs):
   size = 128
   assert cfg.obs in ("rgb", "state")
   output_pixels = cfg.obs == "rgb"
+  if cfg.episode_length != "???":
+    kwargs["duration"] = cfg.episode_length
   env = gym.make(
     "knotgym/Unknot-v0",
     task=task,

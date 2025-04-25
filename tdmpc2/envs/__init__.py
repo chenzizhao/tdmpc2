@@ -7,6 +7,7 @@ from envs.wrappers.multitask import MultitaskWrapper
 from envs.wrappers.tensor import TensorWrapper
 from envs.wrappers.vectorized import Vectorized
 import math
+from functools import partial as bind
 
 def missing_dependencies(task):
 	raise ValueError(f'Missing dependencies for task {task}; install dependencies to use this environment.')
@@ -69,7 +70,11 @@ def make_env(cfg):
   if cfg.multitask:
     env = make_multitask_env(cfg)
   else:
-    fn = make_knot_env
+		fn = {
+			"tie_unknot": bind(make_knot_env, old_api= cfg.num_envs > 1),
+			"mujoco-walker": make_mujoco_env,
+			"bipedal-walker": make_mujoco_env
+		}[cfg.task]
     # assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
     # 'Vectorized environments only support state observations.'
     env = Vectorized(cfg, fn)
