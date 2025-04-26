@@ -137,7 +137,7 @@ class OnlineTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				_train_metrics = dict()
-				for _ in tqdm(range(num_updates), desc='agent.update', disable=num_updates<32):
+				for _ in tqdm(range(num_updates), desc='agent.update', disable=num_updates<128):
 					_train_metrics.update(self.agent.update(self.buffer))
 				train_metrics.update(_train_metrics)
 
