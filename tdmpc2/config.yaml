@@ -6,6 +6,7 @@ task: tie_unknot #
 obs: rgb #
 episodic: true #
 num_envs: 16  #
+task_max_n_states: ???  # for knot tasks
 
 # evaluation
 checkpoint: ???
