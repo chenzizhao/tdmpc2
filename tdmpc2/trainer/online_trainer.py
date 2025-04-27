@@ -1,6 +1,7 @@
 from time import time
 from typing import Dict, List
 
+import numpy as np
 import torch
 from tensordict.tensordict import TensorDict
 from tqdm import tqdm
@@ -31,6 +32,8 @@ class OnlineTrainer(Trainer):
 		ep_rewards = []
 		ep_lengths = []
 		per_ep_rewards = {i: [] for i in range(self.cfg.num_envs)}
+		frames = []
+		recording = True
 
 		obs = self.eval_env.reset()
 		done = torch.tensor([True] * self.cfg.num_envs)
@@ -40,11 +43,25 @@ class OnlineTrainer(Trainer):
 			obs, reward, done, info = self.eval_env.step(action)
 			for env_idx in range(self.cfg.num_envs):
 				per_ep_rewards[env_idx].append(reward[env_idx].item())
+				# update buffer
 				if done[env_idx]:
 					ep_rewards.append(sum(per_ep_rewards[env_idx]))
 					ep_lengths.append(len(per_ep_rewards[env_idx]))
 					per_ep_rewards[env_idx] = []
-			# TODO: video recording
+				# recording related
+				if env_idx == 0:
+					if not done[env_idx] and recording:
+						frames.append(obs[env_idx].cpu().numpy())
+					elif done[env_idx]:
+						recording = False
+
+		if self.cfg.save_video and len(frames) > 0:
+			self.logger._wandb.log({
+					'videos/eval_video': self.logger._wandb.Video(
+						np.stack(frames).transpose(0, 3, 1, 2), fps=15, format='gif'
+					),
+					'step': self._step
+			})
 
 		return dict(
 			episode_reward=torch.tensor(ep_rewards).mean().item(),
