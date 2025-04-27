@@ -15,10 +15,7 @@ class Vectorized:
 
     print(f"Creating {cfg.num_envs} environments...")
     self.env = gymnasium.vector.AsyncVectorEnv(
-      [
-        bind(env_fn, cfg, rank=i + 1)
-        for i in range(cfg.num_envs)
-      ],
+      [bind(env_fn, cfg, rank=i + 1) for i in range(cfg.num_envs)],
       autoreset_mode="SameStep",  # https://farama.org/Vector-Autoreset-Mode
     )
 
@@ -43,9 +40,9 @@ class Vectorized:
   def rand_act(self):
     return torch.rand((self.cfg.num_envs, *self.action_space.shape)) * 2 - 1
 
-  def reset(self):
+  def reset(self, **kwargs):
     # old api
-    obs, info = self.env.reset()
+    obs, info = self.env.reset(**kwargs)
     return obs
 
   def step(self, action):
