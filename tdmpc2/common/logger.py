@@ -136,6 +136,7 @@ class Logger:
 			# name=str(cfg.seed),
 			group=self._group,
 			tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
+			notes=cfg.get("wandb_note", ""),
 			dir=self._log_dir,
 			config=dataclasses.asdict(cfg) | {"slurm_job_id": os.getenv("SLURM_JOB_ID", "")},
 		)
