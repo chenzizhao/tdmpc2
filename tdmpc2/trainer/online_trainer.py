@@ -59,9 +59,7 @@ class OnlineTrainer(Trainer):
 			self.logger._wandb.log({
 					'videos/eval_video': self.logger._wandb.Video(
 						np.stack(frames).transpose(0, 3, 1, 2), fps=15, format='gif'
-					),
-					'step': self._step
-			})
+					),}, step=self._step)
 
 		return dict(
 			episode_reward=torch.tensor(ep_rewards).mean().item(),
@@ -92,7 +90,12 @@ class OnlineTrainer(Trainer):
 	def train(self):
 		"""Train a TD-MPC2 agent."""
 		train_metrics = {}
-		obs = self.env.reset()
+		#
+		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,))
+		self.eval_env.reset(seed=seed)
+		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,))
+		obs = self.env.reset(seed=seed)
+
 		done = torch.full((self.cfg.num_envs,), True)
 		eval_next = True
 		self._tds: Dict[int, List[TensorDict]] = {
