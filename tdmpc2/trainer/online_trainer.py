@@ -91,9 +91,9 @@ class OnlineTrainer(Trainer):
 		"""Train a TD-MPC2 agent."""
 		train_metrics = {}
 		#
-		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,))
+		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
 		self.eval_env.reset(seed=seed)
-		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,))
+		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
 		obs = self.env.reset(seed=seed)
 
 		done = torch.full((self.cfg.num_envs,), True)
