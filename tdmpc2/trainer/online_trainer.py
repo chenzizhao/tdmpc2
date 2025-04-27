@@ -29,25 +29,27 @@ class OnlineTrainer(Trainer):
 	def eval(self):
 		"""Evaluate a TD-MPC2 agent."""
 		ep_rewards = []
-		for i in range(self.cfg.eval_episodes // self.cfg.num_envs):
-			obs, done, ep_reward, t = self.env.reset(), torch.tensor(False), 0, 0
-			if self.cfg.save_video:
-				self.logger.video.init(self.env, enabled=(i==0))
-			while not done.any():
-				torch.compiler.cudagraph_mark_step_begin()
-				action = self.agent.act(obs, t0=t==0, eval_mode=True)
-				obs, reward, done, info = self.env.step(action)
-				ep_reward += reward
-				t += 1
-				if self.cfg.save_video:
-					self.logger.video.record(self.env)
-			assert done.all(), 'Vectorized environments must reset all environments at once.'
-			ep_rewards.append(ep_reward)
-			if self.cfg.save_video:
-				self.logger.video.save(self._step)
+		ep_lengths = []
+		per_ep_rewards = {i: [] for i in range(self.cfg.num_envs)}
+
+		obs = self.eval_env.reset()
+		done = torch.tensor([True] * self.cfg.num_envs)
+		while len(ep_rewards) < self.cfg.eval_episodes:
+			torch.compiler.cudagraph_mark_step_begin()
+			action = self.agent.act(obs, t0=torch.tensor(done).cuda(), eval_mode=True)
+			obs, reward, done, info = self.eval_env.step(action)
+			for env_idx in range(self.cfg.num_envs):
+				per_ep_rewards[env_idx].append(reward[env_idx].item())
+				if done[env_idx]:
+					ep_rewards.append(sum(per_ep_rewards[env_idx]))
+					ep_lengths.append(len(per_ep_rewards[env_idx]))
+					per_ep_rewards[env_idx] = []
+			# TODO: video recording
+
 		return dict(
-			episode_reward=torch.cat(ep_rewards).mean(),
-			episode_success=info['success'].mean(),  # TODO: fix vecenv + episodic
+			episode_reward=torch.tensor(ep_rewards).mean().item(),
+			episode_length=torch.tensor(ep_lengths).float().mean().item(),
+			episode_success=(torch.tensor(ep_rewards) >= 0.0).float().mean().item()
 		)
 
 	def to_td(self, obs, action=None, reward=None, terminated=None):
@@ -83,17 +85,16 @@ class OnlineTrainer(Trainer):
 
 		while self._step <= self.cfg.steps:
       # Evaluate agent periodically
-			if self._step % self.cfg.eval_freq == 0:
+			# if self._step % self.cfg.eval_freq == 0:
+			if abs(self._step % self.cfg.eval_freq) <= self.cfg.num_envs:
 				eval_next = True
 
       # Reset environment  # now handled by autoreset in async vec env
 			if done.any():
 				if eval_next:
-					print("eval during training is disabled for now")
-	      # TODO: bring back eval()
-        # 	eval_metrics = self.eval()
-        # 	eval_metrics.update(self.common_metrics())
-        # 	self.logger.log(eval_metrics, 'eval')
+					eval_metrics = self.eval()
+					eval_metrics.update(self.common_metrics())
+					self.logger.log(eval_metrics, 'eval')
 					self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
 					eval_next = False
 

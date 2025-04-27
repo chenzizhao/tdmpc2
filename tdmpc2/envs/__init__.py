@@ -62,7 +62,7 @@ def make_multitask_env(cfg):
 	return env
 
 
-def make_env(cfg):
+def make_env(cfg, eval_mode=False):
   """
   Make an environment for TD-MPC2 experiments.
   """
@@ -71,7 +71,9 @@ def make_env(cfg):
     env = make_multitask_env(cfg)
   else:
     fn = {
-			"tie_unknot": bind(make_knot_env, old_api= cfg.num_envs == 1),
+			"tie_unknot": bind(make_knot_env,
+											old_api= cfg.num_envs == 1,
+											split="ea" if eval_mode else "tr"),
 			"mujoco-walker": make_mujoco_env,
 			"bipedal-walker": make_mujoco_env,
 			"lunarlander-continuous": make_mujoco_env,

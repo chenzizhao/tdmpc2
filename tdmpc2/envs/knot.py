@@ -56,9 +56,12 @@ class OldStepWrapper(gym.Wrapper):
 
 
 def make_env(cfg, rank=1, old_api=True, **kwargs):
-  split = "tr"
+  split = kwargs.pop("split")
   logdir = cfg.work_dir / split / f"{rank:04d}" if rank == 1 else None
   task = cfg.task  # tie_unknot
+  r_gc_allow_flipped_or_mirrored = cfg.get(
+    "r_gc_allow_flipped_or_mirrored", False
+  )
   size = 128
   assert cfg.obs in ("rgb", "state")
   output_pixels = cfg.obs == "rgb"
@@ -74,6 +77,7 @@ def make_env(cfg, rank=1, old_api=True, **kwargs):
     height=size,
     width=size,
     output_pixels=output_pixels,
+    r_gc_allow_flipped_or_mirrored=r_gc_allow_flipped_or_mirrored,
     **kwargs,
   )
   if output_pixels:

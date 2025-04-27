@@ -53,6 +53,7 @@ def train(cfg: dict):
 	trainer = trainer_cls(
 		cfg=cfg,
 		env=make_env(cfg),
+		eval_env=make_env(cfg, eval_mode=True),
 		agent=TDMPC2(cfg),
 		buffer=Buffer(cfg),
 		logger=Logger(cfg),
