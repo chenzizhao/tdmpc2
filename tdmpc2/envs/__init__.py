@@ -90,8 +90,7 @@ def make_env(cfg, eval_mode=False):
     cfg.obs_shape = {cfg.get("obs", "state"): env.observation_space.shape}
   cfg.action_dim = env.action_space.shape[0]
 
-  seed_steps = max(1000, 5 * cfg.episode_length)
-  cfg.seed_steps = math.ceil(seed_steps / cfg.num_envs) * cfg.num_envs
+  cfg.seed_steps = max(1000, 5 * cfg.episode_length) * cfg.num_envs
   if cfg.override_seed_steps is not None:
     cfg.seed_steps = int(cfg.override_seed_steps)
   print(f"Seed steps: {cfg.seed_steps}")
