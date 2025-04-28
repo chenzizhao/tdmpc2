@@ -252,4 +252,5 @@ class Logger:
 			line = json.dumps(d) + "\n"
 			with open(self._log_dir / "metrics.jsonl", "a") as f:
 				f.write(line)
-		self._print(d, category)
+		if "episode_reward" in d:  # otherwise it is an update metric
+			self._print(d, category)

@@ -90,8 +90,6 @@ class OnlineTrainer(Trainer):
 
 	def train(self):
 		"""Train a TD-MPC2 agent."""
-		train_metrics = {}
-		#
 		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
 		self.eval_env.reset(seed=seed)
 		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
@@ -117,7 +115,7 @@ class OnlineTrainer(Trainer):
 					if done[env_idx]:  # log, add to buffer, and reset
 						td = torch.cat(self._tds[env_idx])
 						reward = td["reward"].nansum(0).item()  # sum over episode
-						train_metrics.update(
+						train_metrics = dict(
 							episode_reward=reward,
 							episode_success=1.0 if reward >= 0 else 0.0,  # NOTE: hack to get is_success
 							episode_length=len(td),
@@ -150,10 +148,11 @@ class OnlineTrainer(Trainer):
 					print(f"Pretraining agent on seed data... {num_updates} updates")
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
-				_train_metrics = dict()
+				train_metrics = dict()
 				for _ in tqdm(range(num_updates), desc='agent.update', disable=num_updates<128):
-					_train_metrics.update(self.agent.update(self.buffer))
-				train_metrics.update(_train_metrics)
+					train_metrics.update(self.agent.update(self.buffer))
+				train_metrics.update(self.common_metrics())
+				self.logger.log(train_metrics, "train")
 
 			self._step += self.cfg.num_envs
 
