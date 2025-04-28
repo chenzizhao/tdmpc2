@@ -98,7 +98,6 @@ class OnlineTrainer(Trainer):
 		obs = self.env.reset(seed=seed)
 
 		done = torch.full((self.cfg.num_envs,), True)
-		eval_next = False
 		self._tds: Dict[int, List[TensorDict]] = {
       i: [self.to_td(obs[i])]
 			for i in range(self.cfg.num_envs)
@@ -107,17 +106,11 @@ class OnlineTrainer(Trainer):
 		while self._step <= self.cfg.steps:
       # Evaluate agent periodically
 			# if self._step % self.cfg.eval_freq == 0:
-			if abs(self._step % self.cfg.eval_freq) <= self.cfg.num_envs:
-				eval_next = True
-
-      # Reset environment  # now handled by autoreset in async vec env
-			if done.any():
-				if eval_next:
-					eval_metrics = self.eval()
-					eval_metrics.update(self.common_metrics())
-					self.logger.log(eval_metrics, 'eval')
-					self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
-					eval_next = False
+			if abs(self._step % self.cfg.eval_freq) < self.cfg.num_envs:
+				eval_metrics = self.eval()
+				eval_metrics.update(self.common_metrics())
+				self.logger.log(eval_metrics, 'eval')
+				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
 
 			if self._step > 0:
 				for env_idx in range(self.cfg.num_envs):
