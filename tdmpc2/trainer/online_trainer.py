@@ -135,7 +135,6 @@ class OnlineTrainer(Trainer):
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 
-			# TODO: is this slow? adding to buffer one env by one
 			for env_idx in range(self.cfg.num_envs):
 				ob_ = info["final_obs"][env_idx] if done[env_idx] else obs[env_idx]
 				self._tds[env_idx].append(

@@ -13,7 +13,7 @@ r_gc_allow_flipped_or_mirrored: false
 # evaluation
 checkpoint: ???
 eval_episodes: 16 # DEBUG
-eval_freq: 10_000  # belongs to tr split (not eval split)
+eval_freq: 100_000
 
 # training
 steps: 10_000_000
