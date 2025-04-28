@@ -67,8 +67,10 @@ def make_env(cfg, rank=1, old_api=True, **kwargs):
   output_pixels = cfg.obs == "rgb"
   if cfg.episode_length != "???":
     kwargs["duration"] = cfg.episode_length
-  if cfg.task_max_n_states != "???":
+  if cfg.task_max_n_states is not None:
     kwargs["task_max_n_states"] = cfg.task_max_n_states
+  if cfg.task_max_n_crossings is not None:
+    kwargs["task_max_n_crossings"] = cfg.task_max_n_crossings
   env = gym.make(
     "knotgym/Unknot-v0",
     task=task,
