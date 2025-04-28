@@ -92,7 +92,7 @@ def make_env(cfg, eval_mode=False):
 
   seed_steps = max(1000, 5 * cfg.episode_length)
   cfg.seed_steps = math.ceil(seed_steps / cfg.num_envs) * cfg.num_envs
-  if cfg.override_seed_steps != "???":
+  if cfg.override_seed_steps is not None:
     cfg.seed_steps = int(cfg.override_seed_steps)
   print(f"Seed steps: {cfg.seed_steps}")
   return env

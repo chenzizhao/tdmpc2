@@ -93,4 +93,8 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
 		cfg.task_dim = 0
 	cfg.tasks = TASK_SET.get(cfg.task, [cfg.task])
 
+
+	# venv eval
+	if cfg.eval_episodes > 0 and cfg.eval_episodes < cfg.num_envs:
+		cfg.eval_episodes = cfg.num_envs
 	return cfg_to_dataclass(cfg)

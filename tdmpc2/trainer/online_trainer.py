@@ -50,8 +50,9 @@ class OnlineTrainer(Trainer):
 					per_ep_rewards[env_idx] = []
 				# recording related
 				if env_idx == 0:
-					if not done[env_idx] and recording:
-						frames.append(obs[env_idx].cpu().numpy())
+					if recording:
+						rendered = self.eval_env.render()  # BHWC
+						frames.append(rendered[env_idx])
 					elif done[env_idx]:
 						recording = False
 
@@ -97,7 +98,7 @@ class OnlineTrainer(Trainer):
 		obs = self.env.reset(seed=seed)
 
 		done = torch.full((self.cfg.num_envs,), True)
-		eval_next = True
+		eval_next = False
 		self._tds: Dict[int, List[TensorDict]] = {
       i: [self.to_td(obs[i])]
 			for i in range(self.cfg.num_envs)
