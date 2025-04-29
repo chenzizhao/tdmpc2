@@ -80,7 +80,7 @@ save_csv: true
 save_train_json: true
 
 # misc
-compile: true  #
+compile: false  #
 save_video: true
 save_agent: true
 seed: 1
