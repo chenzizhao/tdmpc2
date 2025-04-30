@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 import datetime
 
 from common import MODEL_SIZE, TASK_SET
+import os
 
 
 def cfg_to_dataclass(cfg, frozen=False):
@@ -56,12 +57,14 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
 
 	# Convenience
 	if cfg.work_dir == "results-baselines-tdmpc2":
+		folder_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+		folder_name += f"-{os.getenv('SLURM_JOB_ID', 'local')}"
 		cfg.work_dir = (
       Path(hydra.utils.get_original_cwd())
       / "results"
       / "baselines"
       / "tdmpc2"
-      / datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+      / folder_name
     )
 	else:
 		cfg.work_dir = (
