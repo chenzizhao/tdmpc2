@@ -105,10 +105,10 @@ class OnlineTrainer(Trainer):
       # Evaluate agent periodically
 			# if self._step % self.cfg.eval_freq == 0:
 			if abs(self._step % self.cfg.eval_freq) < self.cfg.num_envs:
+				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
 				eval_metrics = self.eval()
 				eval_metrics.update(self.common_metrics())
 				self.logger.log(eval_metrics, 'eval')
-				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
 
 			if self._step > 0:
 				for env_idx in range(self.cfg.num_envs):
