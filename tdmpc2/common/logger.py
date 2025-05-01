@@ -133,6 +133,7 @@ class Logger:
 		wandb.init(
 			project=self.project,
 			entity=self.entity,
+			id=cfg.get("wandb_run_id", None),
 			# name=str(cfg.seed),
 			group=self._group,
 			tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
@@ -141,6 +142,11 @@ class Logger:
 			config=dataclasses.asdict(cfg) | {"slurm_job_id": os.getenv("SLURM_JOB_ID", "")},
 		)
 		print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
+
+		if cfg.get("wandb_run_id", None) is None:
+			with open(self._log_dir / "wandb_run_id.txt", "w") as f:
+				f.write(wandb.run.id)
+			print(colored(f"For the first time: {wandb.run.id=}", "blue", attrs=["bold"]))
 		self._wandb = wandb
 		self._video = (
 			VideoRecorder(cfg, self._wandb)
@@ -167,6 +173,32 @@ class Logger:
 				)
 				artifact.add_file(fp)
 				self._wandb.log_artifact(artifact)
+
+
+	def save_training_state(self, trainer):
+		training_state_path = self._log_dir / "training_state.csv"
+		with open(training_state_path, "a+") as f:
+			now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+			f.write(f"{now},{trainer._step},{trainer._ep_idx}\n")
+
+	def maybe_load_training_state(self, trainer):
+		training_state_path = self._log_dir / "training_state.csv"
+		if not training_state_path.exists():
+			return
+		with open(training_state_path, "r") as f:
+			lines = f.readlines()
+		if not lines:
+			return
+		last_line = lines[-1].strip().split(",")
+		if len(last_line) < 3:
+			return
+		try:
+			trainer._step = int(last_line[1])
+			trainer._ep_idx = int(last_line[2])
+			print(colored(f"Resuming from step {trainer._step}, episode {trainer._ep_idx}.", "blue", attrs=["bold"]))
+		except ValueError:
+			print(colored("Failed to parse training state. Starting fresh.", "red"))
+
 
 	def finish(self, agent=None):
 		try:

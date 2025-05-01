@@ -1,6 +1,10 @@
 import torch
 from tensordict.tensordict import TensorDict
-from torchrl.data.replay_buffers import ReplayBuffer, LazyTensorStorage
+from torchrl.data.replay_buffers import (
+  ReplayBuffer,
+  # LazyTensorStorage,
+  LazyMemmapStorage,
+)
 from torchrl.data.replay_buffers.samplers import SliceSampler
 
 
@@ -24,6 +28,7 @@ class Buffer():
 		)
 		self._batch_size = cfg.batch_size * (cfg.horizon+1)
 		self._num_eps = 0
+		self.maybe_load_checkpoint()
 
 	@property
 	def capacity(self):
@@ -63,8 +68,30 @@ class Buffer():
 		print(f'Using {storage_device.upper()} memory for storage.')
 		self._storage_device = torch.device(storage_device)
 		return self._reserve_buffer(
-			LazyTensorStorage(self._capacity, device=self._storage_device)
+			LazyMemmapStorage(self._capacity, scratch_dir=self.cfg.work_dir / 'storage', existsok=True)
 		)
+
+	def save_checkpoint(self):
+		if self._num_eps == 0:
+			print('Buffer is empty. No checkpoint saved.')
+			return
+		d = {
+			'_num_eps': self._num_eps,
+			'_capacity': self._capacity,
+		}
+		torch.save(d, self.cfg.work_dir / 'buffer_info.pth')
+		self._buffer.save(self.cfg.work_dir)
+
+	def maybe_load_checkpoint(self):
+		buffer_info_path = self.cfg.work_dir / 'buffer_info.pth'
+		if not buffer_info_path.exists():
+			print('No buffer checkpoint info found. Initializing new buffer.')
+			return
+		d = torch.load(buffer_info_path, map_location='cpu')
+		self._num_eps = d['_num_eps']
+		self._capacity = d['_capacity']
+		self._buffer.load(self.cfg.work_dir)
+		print(f'Loaded buffer info: {self._num_eps} episodes, capacity {self._capacity:,}')
 
 	def load(self, td):
 		"""

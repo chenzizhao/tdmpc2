@@ -1,14 +1,13 @@
 import dataclasses
+import os
 import re
+from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import hydra
-from omegaconf import OmegaConf
-import datetime
-
 from common import MODEL_SIZE, TASK_SET
-import os
+from omegaconf import OmegaConf
 
 
 def cfg_to_dataclass(cfg, frozen=False):
@@ -26,6 +25,32 @@ def cfg_to_dataclass(cfg, frozen=False):
 		return getattr(self, val, default)
 	dataclass.get = get
 	return dataclass()
+
+
+def maybe_resume() -> Tuple[bool, Path, str]:
+  """look for slurm id and wandb run id in the canonical logs directory."""
+  logs_dir = Path(hydra.utils.get_original_cwd()) / "logs"
+  slurm_job_id = str(os.getenv("SLURM_JOB_ID", "local"))
+  default_work_dir = logs_dir / (
+    datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + f"-{slurm_job_id}"
+  )
+
+  if slurm_job_id == "local":
+    # not on slurm system
+    return False, default_work_dir, None  # start new run
+  # look for a directory named after the SLURM job ID
+  work_dir = None
+  for d in logs_dir.iterdir():
+    if d.is_dir() and d.name.endswith(str(slurm_job_id)):
+      work_dir = d
+      break
+  if work_dir is None:
+    return False, default_work_dir, None  # start new run
+  if not (work_dir / "wandb_run_id.txt").exists():
+    return False, work_dir, None
+  with open(work_dir / "wandb_run_id.txt", "r") as f:
+    wandb_run_id = f.read().strip()
+  return True, work_dir, wandb_run_id
 
 
 def parse_cfg(cfg: OmegaConf) -> OmegaConf:
@@ -57,15 +82,9 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
 
 	# Convenience
 	if cfg.work_dir == "results-baselines-tdmpc2":
-		folder_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
-		folder_name += f"-{os.getenv('SLURM_JOB_ID', 'local')}"
-		cfg.work_dir = (
-      Path(hydra.utils.get_original_cwd())
-      / "results"
-      / "baselines"
-      / "tdmpc2"
-      / folder_name
-    )
+		resume, work_dir, wandb_run_id = maybe_resume()
+		cfg.work_dir = work_dir
+		cfg.wandb_run_id = wandb_run_id
 	else:
 		cfg.work_dir = (
 			Path(hydra.utils.get_original_cwd())

@@ -16,6 +16,7 @@ class OnlineTrainer(Trainer):
 		self._step = 0
 		self._ep_idx = 0
 		self._start_time = time()
+		self.logger.maybe_load_training_state(self)
 
 	def common_metrics(self):
 		"""Return a dictionary of current metrics."""
@@ -106,25 +107,28 @@ class OnlineTrainer(Trainer):
 			# if self._step % self.cfg.eval_freq == 0:
 			if abs(self._step % self.cfg.eval_freq) < self.cfg.num_envs:
 				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
+				self.buffer.save_checkpoint()
+				self.logger.save_training_state(self)
 				eval_metrics = self.eval()
 				eval_metrics.update(self.common_metrics())
 				self.logger.log(eval_metrics, 'eval')
 
-			if self._step > 0:
-				for env_idx in range(self.cfg.num_envs):
-					if done[env_idx]:  # log, add to buffer, and reset
-						td = torch.cat(self._tds[env_idx])
-						reward = td["reward"].nansum(0).item()  # sum over episode
-						train_metrics = dict(
-							episode_reward=reward,
-							episode_success=1.0 if reward >= 0 else 0.0,  # NOTE: hack to get is_success
-							episode_length=len(td),
-							episode_terminated=td["terminated"][-1].item(),  # or info["terminated"][env_idx]
-						)
-						train_metrics.update(self.common_metrics())
-						self.logger.log(train_metrics, "train")
-						self._ep_idx = self.buffer.add(td)
-						self._tds[env_idx] = [self.to_td(obs[env_idx])]
+			for env_idx in range(self.cfg.num_envs):
+				# guard the first and the resume cases
+				if done[env_idx] and len(self._tds[env_idx]) > 1:
+					# log, add to buffer, and reset
+					td = torch.cat(self._tds[env_idx])
+					reward = td["reward"].nansum(0).item()  # sum over episode
+					train_metrics = dict(
+						episode_reward=reward,
+						episode_success=1.0 if reward >= 0 else 0.0,  # NOTE: hack to get is_success
+						episode_length=len(td),
+						episode_terminated=td["terminated"][-1].item(),  # or info["terminated"][env_idx]
+					)
+					train_metrics.update(self.common_metrics())
+					self.logger.log(train_metrics, "train")
+					self._ep_idx = self.buffer.add(td)
+					self._tds[env_idx] = [self.to_td(obs[env_idx])]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
