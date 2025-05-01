@@ -71,7 +71,8 @@ def make_env(cfg, rank=1, old_api=True, **kwargs):
     kwargs["task_max_n_states"] = cfg.task_max_n_states
   if cfg.task_max_n_crossings is not None:
     kwargs["task_max_n_crossings"] = cfg.task_max_n_crossings
-  kwargs["task_subset_seed"] = cfg.get("task_subset_seed")
+  kwargs["task_subset_seed"] = cfg.task_subset_seed
+  kwargs["render_both"] = cfg.render_both
   env = gym.make(
     "knotgym/Unknot-v0",
     task=task,

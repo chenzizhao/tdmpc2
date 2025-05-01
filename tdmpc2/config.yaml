@@ -10,6 +10,7 @@ task_max_n_states:
 task_max_n_crossings:
 task_subset_seed: -1  # -1 to follow the dir name order
 r_gc_allow_flipped_or_mirrored: true
+render_both: true
 
 # evaluation
 checkpoint: ???
