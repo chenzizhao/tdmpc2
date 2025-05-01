@@ -29,7 +29,7 @@ def cfg_to_dataclass(cfg, frozen=False):
 
 def maybe_resume() -> Tuple[bool, Path, str]:
   """look for slurm id and wandb run id in the canonical logs directory."""
-  logs_dir = Path(hydra.utils.get_original_cwd()) / "logs"
+  logs_dir = Path(hydra.utils.get_original_cwd()) / "results" / "baselines" / "tdmpc2"
   slurm_job_id = str(os.getenv("SLURM_JOB_ID", "local"))
   default_work_dir = logs_dir / (
     datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + f"-{slurm_job_id}"
