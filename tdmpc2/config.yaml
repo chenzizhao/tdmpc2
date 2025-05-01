@@ -9,7 +9,7 @@ num_envs: 32  #
 task_max_n_states:
 task_max_n_crossings:
 task_subset_seed: -1  # -1 to follow the dir name order
-r_gc_allow_flipped_or_mirrored: false
+r_gc_allow_flipped_or_mirrored: true
 
 # evaluation
 checkpoint: ???
@@ -94,7 +94,7 @@ multitask: ???
 tasks: ???
 obs_shape: ???
 action_dim: ???
-episode_length: ???  # must specify for mujoco- or knot- tasks
+episode_length: 50  # must specify for mujoco- or knot- tasks
 obs_shapes: ???
 action_dims: ???
 episode_lengths: ???
