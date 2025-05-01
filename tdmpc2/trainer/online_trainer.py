@@ -34,7 +34,7 @@ class OnlineTrainer(Trainer):
 		ep_lengths = []
 		per_ep_rewards = {i: [] for i in range(self.cfg.num_envs)}
 		frames = []
-		recording = True
+		recording = False
 
 		obs = self.eval_env.reset()
 		done = torch.tensor([True] * self.cfg.num_envs)
@@ -92,9 +92,11 @@ class OnlineTrainer(Trainer):
 	def train(self):
 		"""Train a TD-MPC2 agent."""
 		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
-		self.eval_env.reset(seed=seed)
-		seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
-		obs = self.env.reset(seed=seed)
+		# self.eval_env.reset(seed=seed)
+		# seed = np.random.randint(0, 2**32 - 1, size=(self.cfg.num_envs,)).tolist()
+		# obs = self.env.reset(seed=seed)
+		self.eval_env.reset()
+		obs = self.env.reset()
 
 		done = torch.full((self.cfg.num_envs,), True)
 		self._tds: Dict[int, List[TensorDict]] = {
@@ -109,9 +111,9 @@ class OnlineTrainer(Trainer):
 				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
 				self.buffer.save_checkpoint()
 				self.logger.save_training_state(self)
-				eval_metrics = self.eval()
-				eval_metrics.update(self.common_metrics())
-				self.logger.log(eval_metrics, 'eval')
+				# eval_metrics = self.eval()
+				# eval_metrics.update(self.common_metrics())
+				# self.logger.log(eval_metrics, 'eval')
 
 			for env_idx in range(self.cfg.num_envs):
 				# guard the first and the resume cases
@@ -138,7 +140,8 @@ class OnlineTrainer(Trainer):
 			obs, reward, done, info = self.env.step(action)
 
 			for env_idx in range(self.cfg.num_envs):
-				ob_ = info["final_obs"][env_idx] if done[env_idx] else obs[env_idx]
+				# 0.29 - final_observation, 1.1 - final_obs
+				ob_ = info["final_observation"][env_idx] if done[env_idx] else obs[env_idx]
 				self._tds[env_idx].append(
 					self.to_td(
 						ob_, action[env_idx], reward[env_idx], info["terminated"][env_idx]

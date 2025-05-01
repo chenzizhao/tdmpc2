@@ -40,10 +40,10 @@ def maybe_resume() -> Tuple[bool, Path, str]:
     return False, default_work_dir, None  # start new run
   # look for a directory named after the SLURM job ID
   work_dir = None
-  for d in logs_dir.iterdir():
-    if d.is_dir() and d.name.endswith(str(slurm_job_id)):
-      work_dir = d
-      break
+  # for d in logs_dir.iterdir():
+  #   if d.is_dir() and d.name.endswith(str(slurm_job_id)):
+  #     work_dir = d
+  #     break
   if work_dir is None:
     return False, default_work_dir, None  # start new run
   if not (work_dir / "wandb_run_id.txt").exists():

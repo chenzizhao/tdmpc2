@@ -80,6 +80,8 @@ def make_env(cfg, eval_mode=False):
 			"mujoco-walker": make_mujoco_env,
 			"bipedal-walker": make_mujoco_env,
 			"lunarlander-continuous": make_mujoco_env,
+			"cartpole_balance": make_dm_control_env,
+			"cartpole_balance_sparse": make_dm_control_env,
 		}[cfg.task]
     # assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
     # 'Vectorized environments only support state observations.'

@@ -39,17 +39,21 @@ class DMControlWrapper:
 			high=np.full(action_shape, env.action_spec().maximum),
 			dtype=env.action_spec().dtype)
 		self.action_spec_dtype = env.action_spec().dtype
+		self.metadata = dict()  #
+
+	def close(self):  #
+		self.env.close()
 
 	@property
 	def unwrapped(self):
 		return self.env
-	
+
 	def _obs_to_array(self, obs):
 		return torch.from_numpy(
 			np.concatenate([v.flatten() for v in obs.values()], dtype=np.float32))
-	
+
 	def reset(self):
-		return self._obs_to_array(self.env.reset().observation)
+		return self._obs_to_array(self.env.reset().observation), defaultdict(float)
 
 	def step(self, action):
 		reward = 0
@@ -57,8 +61,8 @@ class DMControlWrapper:
 		for _ in range(2):
 			step = self.env.step(action)
 			reward += step.reward
-		return self._obs_to_array(step.observation), reward, False, defaultdict(float)
-	
+		return self._obs_to_array(step.observation), reward, False, False, defaultdict(float)
+
 	def render(self, width=384, height=384, camera_id=None):
 		return self.env.physics.render(height, width, camera_id or self.camera_id)
 
@@ -82,17 +86,17 @@ class Pixels(gym.Wrapper):
 
 	def reset(self):
 		self.env.reset()
-		return self._get_obs(is_reset=True)
+		return self._get_obs(is_reset=True), defaultdict(float)
 
 	def step(self, action):
-		_, reward, done, info = self.env.step(action)
-		return self._get_obs(), reward, done, info
+		_, reward, done, trunc, info = self.env.step(action)
+		return self._get_obs(), reward, done, trunc, info
 
 	def close(self):
 		self.env.close()
 
 
-def make_env(cfg):
+def make_env(cfg, rank=-1):
 	"""
 	Make DMControl environment.
 	Adapted from https://github.com/facebookresearch/drqv2

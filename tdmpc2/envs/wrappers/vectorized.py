@@ -16,7 +16,7 @@ class Vectorized:
     print(f"Creating {cfg.num_envs} environments...")
     self.env = gymnasium.vector.AsyncVectorEnv(
       [bind(env_fn, cfg, rank=i + 1) for i in range(cfg.num_envs)],
-      autoreset_mode="SameStep",  # https://farama.org/Vector-Autoreset-Mode
+      # autoreset_mode="SameStep",  # https://farama.org/Vector-Autoreset-Mode
     )
 
     obs_space = self.env.single_observation_space
@@ -56,5 +56,6 @@ class Vectorized:
       info["success"] = info["success"].astype(float)  # numpy array
     return obs, reward, done, info
 
+  # does not work well with gymnasium == 0.29.1
   def render(self, *args, **kwargs):
     return self.env.render(*args, **kwargs)
