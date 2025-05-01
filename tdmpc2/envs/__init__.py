@@ -70,10 +70,13 @@ def make_env(cfg, eval_mode=False):
   if cfg.multitask:
     env = make_multitask_env(cfg)
   else:
-    fn = {
-			"tie_unknot": bind(make_knot_env,
+    make_knot = bind(make_knot_env,
 											old_api= cfg.num_envs == 1,
-											split="ea" if eval_mode else "tr"),
+											split="ea" if eval_mode else "tr")
+    fn = {
+			"unknot": make_knot,
+			"tie_unknot": make_knot,
+			"eq": make_knot,
 			"mujoco-walker": make_mujoco_env,
 			"bipedal-walker": make_mujoco_env,
 			"lunarlander-continuous": make_mujoco_env,
