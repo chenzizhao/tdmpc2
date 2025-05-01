@@ -5,18 +5,19 @@ defaults:
 task: tie_unknot #
 obs: rgb #
 episodic: true #
-num_envs: 16  #
+num_envs: 32  #
 task_max_n_states:
 task_max_n_crossings:
+task_subset_seed: -1  # -1 to follow the dir name order
 r_gc_allow_flipped_or_mirrored: false
 
 # evaluation
 checkpoint: ???
-eval_episodes: 16 #
+eval_episodes: 128 #
 eval_freq: 50_000
 
 # training
-steps: 10_000_000
+steps: 1_100_000
 batch_size: 256
 steps_per_update: 1
 reward_coef: 0.1
