@@ -82,6 +82,13 @@ class Buffer():
 		torch.save(d, self.cfg.work_dir / 'buffer_info.pth')
 		self._buffer.save(self.cfg.work_dir)
 
+	def delete_checkpoint(self):
+		buffer_path = self.cfg.work_dir / 'storage'
+		if buffer_path.exists():
+			for file in buffer_path.iterdir():
+				file.unlink()
+				print(f'Deleted buffer file: {file}')
+
 	def maybe_load_checkpoint(self):
 		buffer_info_path = self.cfg.work_dir / 'buffer_info.pth'
 		if not buffer_info_path.exists():

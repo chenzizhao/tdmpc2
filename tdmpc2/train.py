@@ -59,6 +59,7 @@ def train(cfg: dict):
 		logger=Logger(cfg),
 	)
 	trainer.train()
+	trainer.buffer.delete_checkpoint()
 	print('\nTraining completed successfully')
 
 
