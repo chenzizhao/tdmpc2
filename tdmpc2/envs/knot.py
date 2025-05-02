@@ -13,7 +13,7 @@ class Pixels(gym.Wrapper):
     super().__init__(env)
     self.cfg = cfg
     self.env = env
-    height, width, channels = self.env.observation_space  # 480, 960, 3
+    height, width, channels = self.env.observation_space.shape  # 480, 960, 3
     self.observation_space = gym.spaces.Box(
       low=0, high=255, shape=(channels, height, width), dtype=np.uint8
     )
