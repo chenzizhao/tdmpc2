@@ -13,30 +13,13 @@ class Pixels(gym.Wrapper):
     super().__init__(env)
     self.cfg = cfg
     self.env = env
-    obs = self.env.observation_space  # 480, 960, 3
-    if cfg.render_both:
-      height, combined_width, channels = obs.shape
-      width = combined_width // 2
-      self.observation_space = gym.spaces.Box(
-        low=0, high=255, shape=(channels * 2, height, width), dtype=np.uint8
-      )
-    else:
-      height, width, channels = obs.shape
-      self.observation_space = gym.spaces.Box(
-        low=0, high=255, shape=(channels, height, width), dtype=np.uint8
-      )
+    height, width, channels = self.env.observation_space  # 480, 960, 3
+    self.observation_space = gym.spaces.Box(
+      low=0, high=255, shape=(channels, height, width), dtype=np.uint8
+    )
 
   def _proc_obs(self, obs):
-    # 480, 960, 3 --> 480, 480, 6
-    if self.cfg.render_both:
-      obs = np.concatenate(
-        [
-          obs[:, : obs.shape[1] // 2, :],
-          obs[:, obs.shape[1] // 2 :, :],
-        ],
-        axis=-1,
-      )
-    # 480, 480, 6 --> 6, 480, 480
+    # 480, 960, 3 --> 3, 480, 960
     obs = np.transpose(obs, (2, 0, 1))
     return obs
 
