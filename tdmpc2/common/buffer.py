@@ -69,14 +69,21 @@ class Buffer():
 		if self._num_eps == 0:
 			print('Buffer is empty. No checkpoint saved.')
 			return
+		# save sample instance for future reconstruction
+		if not (self.cfg.work_dir / 'sample_buffer_td').exists():
+			sample = self._buffer.sample()
+			sample.dumps(self.cfg.work_dir / 'sample_buffer_td')
+		# save my buffer class info
 		d = {
 			'_num_eps': self._num_eps,
 			'_capacity': self._capacity,
 		}
 		torch.save(d, self.cfg.work_dir / 'buffer_info.pth')
+		# save the underlying buffer
 		self._buffer.save(self.cfg.work_dir)
 
 	def delete_checkpoint(self):
+		# delete the storage
 		buffer_path = self.cfg.work_dir / 'storage'
 		if buffer_path.exists():
 			for file in buffer_path.iterdir():
@@ -91,8 +98,11 @@ class Buffer():
 		d = torch.load(buffer_info_path, map_location='cpu')
 		self._num_eps = d['_num_eps']
 		self._capacity = d['_capacity']
-		self._buffer.load(self.cfg.work_dir)
 		print(f'Loaded buffer info: {self._num_eps} episodes, capacity {self._capacity:,}')
+		tds = TensorDict.load(self.cfg.work_dir / 'sample_buffer_td', map_location='cpu')
+		self._init(tds)  # should setup self._buffer
+		self._buffer.load(self.cfg.work_dir)
+		print(f'Buffer checkpoint loaded successfully of size {len(self._buffer.storage)}.')
 
 	def load(self, td):
 		"""

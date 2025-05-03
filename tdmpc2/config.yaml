@@ -15,7 +15,7 @@ render_both: true
 # evaluation
 checkpoint: ???
 eval_episodes: 128 #
-eval_freq: 50_000
+eval_freq: 100_000
 
 # training
 steps: 1_100_000
