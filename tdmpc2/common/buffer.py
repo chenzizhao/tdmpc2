@@ -1,10 +1,6 @@
 import torch
 from tensordict.tensordict import TensorDict
-from torchrl.data.replay_buffers import (
-  ReplayBuffer,
-  # LazyTensorStorage,
-  LazyMemmapStorage,
-)
+from torchrl.data.replay_buffers import ReplayBuffer, LazyTensorStorage
 from torchrl.data.replay_buffers.samplers import SliceSampler
 
 
@@ -67,9 +63,7 @@ class Buffer():
 		storage_device = 'cuda:0' if 2.5*total_bytes < mem_free else 'cpu'
 		print(f'Using {storage_device.upper()} memory for storage.')
 		self._storage_device = torch.device(storage_device)
-		return self._reserve_buffer(
-			LazyMemmapStorage(self._capacity, scratch_dir=self.cfg.work_dir / 'storage', existsok=True)
-		)
+		return self._reserve_buffer(LazyTensorStorage(self._capacity, device=self._storage_device))
 
 	def save_checkpoint(self):
 		if self._num_eps == 0:
