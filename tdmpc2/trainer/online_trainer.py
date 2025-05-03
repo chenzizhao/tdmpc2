@@ -107,11 +107,13 @@ class OnlineTrainer(Trainer):
 			# if self._step % self.cfg.eval_freq == 0:
 			if abs(self._step % self.cfg.eval_freq) < self.cfg.num_envs:
 				self.logger.save_agent(self.agent, identifier=f'step{self._step:09d}')
-				self.buffer.save_checkpoint()
-				self.logger.save_training_state(self)
 				eval_metrics = self.eval()
 				eval_metrics.update(self.common_metrics())
 				self.logger.log(eval_metrics, 'eval')
+
+			if abs(self._step % self.cfg.checkpoint_freq) < self.cfg.num_envs:
+				self.buffer.save_checkpoint()  # quite expensive on I/O
+				self.logger.save_training_state(self)
 
 			for env_idx in range(self.cfg.num_envs):
 				# guard the first and the resume cases
