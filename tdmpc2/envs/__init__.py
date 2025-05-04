@@ -76,7 +76,7 @@ def make_env(cfg, eval_mode=False):
     fn = {
 			"unknot": make_knot,
 			"tie_unknot": make_knot,
-			"eq": make_knot,
+			"eq1": make_knot,
 			"mujoco-walker": make_mujoco_env,
 			"bipedal-walker": make_mujoco_env,
 			"lunarlander-continuous": make_mujoco_env,
