@@ -16,7 +16,7 @@ render_both: true
 checkpoint: ???
 eval_episodes: 128 #
 eval_freq: 100_000
-checkpoint_freq: 200_000  # multiple of eval_freq
+checkpoint_freq: 20_000_000  # multiple of eval_freq  # large enough to disable
 
 # training
 steps: 1_100_000
