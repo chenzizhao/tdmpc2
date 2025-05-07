@@ -27,7 +27,7 @@ def cfg_to_dataclass(cfg, frozen=False):
 	return dataclass()
 
 
-def maybe_resume() -> Tuple[bool, Path, str]:
+def maybe_resume(enabled: bool) -> Tuple[bool, Path, str]:
   """look for slurm id and wandb run id in the canonical logs directory."""
   logs_dir = Path(hydra.utils.get_original_cwd()) / "results" / "baselines" / "tdmpc2"
   slurm_job_id = str(os.getenv("SLURM_JOB_ID", "local"))
@@ -35,7 +35,7 @@ def maybe_resume() -> Tuple[bool, Path, str]:
     datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f") + f"-{slurm_job_id}"
   )
 
-  if slurm_job_id == "local":
+  if slurm_job_id == "local" or not enabled:
     # not on slurm system
     return False, default_work_dir, None  # start new run
   # look for a directory named after the SLURM job ID
@@ -82,7 +82,7 @@ def parse_cfg(cfg: OmegaConf) -> OmegaConf:
 
 	# Convenience
 	if cfg.work_dir == "results-baselines-tdmpc2":
-		resume, work_dir, wandb_run_id = maybe_resume()
+		resume, work_dir, wandb_run_id = maybe_resume(enabled=False)
 		cfg.work_dir = work_dir
 		cfg.wandb_run_id = wandb_run_id
 	else:
