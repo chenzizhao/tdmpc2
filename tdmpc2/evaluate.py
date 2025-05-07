@@ -5,19 +5,33 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+import json
+import re
+import sys
+from datetime import datetime
+
 import hydra
 import imageio
 import numpy as np
 import torch
-from termcolor import colored
-
 from common.parser import parse_cfg
 from common.seed import set_seed
 from envs import make_env
+from termcolor import colored
+
 from tdmpc2 import TDMPC2
-import json
 
 torch.backends.cudnn.benchmark = True
+
+
+def parse_slurm_job_id(load_from) -> str:
+  # given: results/baselines/tdmpc2/2025-05-05-09-07-55-102895-7858394/models/step001000000.pt
+  # 7858394
+  match = re.search(
+    r"results/baselines/tdmpc2/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-\d{6}-(\d+)/",
+    load_from,
+  )
+  return match.group(1)
 
 
 @hydra.main(config_name="config", config_path=".")
@@ -65,14 +79,9 @@ def evaluate(cfg: dict):
   agent.load(cfg.checkpoint)
 
   print(colored(f"Evaluating agent on {cfg.task}:", "yellow", attrs=["bold"]))
-  if cfg.save_video:
-    video_dir = os.path.join(cfg.work_dir, "videos")
-    os.makedirs(video_dir, exist_ok=True)
 
   ep_rewards = []
   ep_lengths = []
-  frames = []
-  should_record = True
   obs = env.reset()
   done = torch.tensor([True] * env.num_envs)
   per_env_rewards = {i: [] for i in range(env.num_envs)}  # buffer for venv
@@ -86,30 +95,34 @@ def evaluate(cfg: dict):
         ep_rewards.append(sum(per_env_rewards[env_idx]))
         ep_lengths.append(len(per_env_rewards[env_idx]))
         per_env_rewards[env_idx] = []
-      if env_idx == 0 and cfg.save_video and should_record:
-        frames.append(env.render())
 
-  if cfg.save_video:
-    imageio.mimsave(os.path.join(video_dir, "eval.gif"), frames, fps=15)
+  env.close()
 
-  ep_rewards = np.mean(ep_rewards)
-  ep_successes = np.mean(np.array(ep_rewards) >= 0.0)
-  ep_lengths = np.mean(ep_lengths, dtype=np.float32)
-
-  print(colored("Evaluation results:", "green", attrs=["bold"]))
-  print(colored(f"  Average episode reward: {ep_rewards:.2f}", "green"))
-  print(colored(f"  Average episode length: {ep_lengths:.2f}", "green"))
-  print(colored(f"  Average episode success rate: {ep_successes:.2f}", "green"))
-
-  # add timestamps
-
-  report = {
-    "episode_reward": ep_rewards,
-    "episode_length": ep_lengths,
-    "episode_success": ep_successes,
-  }
-  with open(os.path.join(cfg.work_dir, "eval_results.txt"), "w") as f:
-    json.dump(report, f, indent=4)
+  report = dict(
+    # checkpointing
+    eval_slurm_job_id=parse_slurm_job_id(cfg.checkpoint),
+    load_from=cfg.checkpoint,
+    command=" ".join(sys.argv),
+    # tasks
+    task=cfg.task,
+    num_envs=cfg.num_envs,
+    task_max_n_crossings=cfg.task_max_n_crossings,
+    task_max_n_states=cfg.task_max_n_states,
+    # results
+    episode_success_rate=np.mean([v >= 0 for v in ep_rewards]).item(),
+    episode_rewards_mean=np.mean(ep_rewards).item(),
+    episode_lengths_mean=np.mean(ep_lengths, dtype=float).item(),
+    n_eval_episodes=len(ep_rewards),
+    episode_rewards=ep_rewards,
+    episode_lengths=ep_lengths,
+    # aux
+    timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    seed=cfg.seed
+  )
+  report_path = os.path.join(cfg.work_dir, "eval_report.json")
+  with open(report_path, "w") as f:
+    json.dump(report, f, indent=2)
+  print(f"Eval report saved saved to:{report_path}")
 
 
 if __name__ == "__main__":
