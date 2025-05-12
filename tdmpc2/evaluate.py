@@ -11,7 +11,6 @@ import sys
 from datetime import datetime
 
 import hydra
-import imageio
 import numpy as np
 import torch
 from common.parser import parse_cfg
