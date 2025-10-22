@@ -68,7 +68,7 @@ def make_env(cfg, rank=1, old_api=True, **kwargs):
     "knotgym/Unknot-v0",
     task=task,
     logdir=logdir,
-    logfreq=25,
+    logfreq=100,  #
     split=split,
     height=size,
     width=size,
